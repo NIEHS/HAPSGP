@@ -28,7 +28,7 @@
 process_haps <-
   function(
     path = NULL,
-    date = c("2020-12-31", "2021-01-02"),
+    date = c("2018-01-01", "2021-12-31"),
     sites_file="AMA_SITE_INFORMATION.Rda",
     mode = c("date-location", "available-data", "location"),
     data_field = NULL,
@@ -63,7 +63,7 @@ process_haps <-
     
     filenames <- paste0("AMA_", year_vec, ".Rda")
     haps_file <-
-      list.files(path)[list.files(path) %in% filenames]
+      list.files(path, full.names=T)[list.files(path) %in% filenames]
     if (length(haps_file) == 0) {
       stop("HAPs data not available for this year.")
     }
@@ -119,8 +119,9 @@ process_haps <-
     AMA_v <- AMA_v[,-1] # remove "STATE_ABBR" variable
     
     # Import sites file to find Datum information
-    load(sites_file)
-    
+    datum_file <- list.files(path, full.names=T)[list.files(path) %in% sites_file]
+    load(datum_file)
+
     # Append datum to sites
     # Perform the join
     AMA_v <- dplyr::left_join(AMA_v, AMA_SITE_INFORMATION |> dplyr::select(AMA_SITE_CODE, DATUM), by = "AMA_SITE_CODE")
@@ -163,7 +164,7 @@ process_haps <-
       AMA_v_nad27 <- as.data.frame(AMA_v_nad27)
       final_sites <- rbind(final_sites, AMA_v_nad83)
       }
-    final_sites <- final_sites[,-4] #Remove DATUM column
+     final_sites <- final_sites[, .SD, .SDcols = -ncol(final_sites)] #Remove DATUM column
     
     if (mode == "date-location") {
       final_sites <-

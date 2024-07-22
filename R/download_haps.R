@@ -5,10 +5,14 @@
 #' Air Pollutants (HAPS) data from the 
 #' [ Ambient Monitoring Archive (AMA) for the  Hazardous Air Pollutants (HAPs) ]
 #' (https://www.epa.gov/amtic/amtic-ambient-monitoring-archive-haps).
+# nolint end
 #' @param url_aqs_download character(1).
-#'  URL to the AQS pre-generated datasets.
+#'  URL to the AQS pre-generated datasets. The default link downloads a folder with all HAPs 
+#'  data available between 1990 and 2021 plus metadata files (total size 737M), in .Rda format.
+#'  Different download links for individual years and other data formats are available in the HAPs 
+#'  website (see link above). 
 #' @param directory_to_download character(1).
-#'  Directory to download zip files from AQS data mart.
+#'  Directory to download zip files into.
 #' @param directory_to_save character(1).
 #'  Directory to decompress zip files.
 #' @param download logical(1). \code{FALSE} will generate a *.txt file
@@ -32,8 +36,8 @@
 download_haps <-
   function(
     url_aqs_download = "https://www.epa.gov/system/files/other-files/2023-10/ama_haps_2021_r_files.zip",
-    directory_to_download = "~/Downloads",
-    directory_to_save = "~",
+    directory_to_download = NULL,
+    directory_to_save = NULL,
     download = FALSE,
     acknowledgement = TRUE,
     remove_command = TRUE,

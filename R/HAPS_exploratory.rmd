@@ -1,0 +1,67 @@
+---
+title: "HAPs exploratory analysis"
+author: "Mariana Alifa Kassien"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{HAPs exploratory analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+HAPs are Hazardous Air Pollutants recorded by the EPA's Air Quality System. More
+information can be found here: https://www.epa.gov/amtic/amtic-ambient-monitoring-archive-haps
+
+This vignette presents some exploratory analysis of HAPs data for the contiguous USA between 2018 and 2021, for the purpose of filtering the dataset before further analysis and modeling. 
+
+## Data download and process
+
+The function `download_haps` was built to download and unzipped a folder containing yearly haps file for the entire time period (1990 to 2021) plus metatada. 
+
+The function `process_haps` filters the data to open and concatenate the years of interest, and filter for the provided variables of interest within the dataset. After this analysis, the function may be updated to provide further filtering options. 
+
+
+## Styles
+
+The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
+
+    output: 
+      rmarkdown::html_vignette:
+        css: mystyles.css
+
+## Figures
+
+The figure sizes have been customised so that you can easily put two images side-by-side. 
+
+```{r, fig.show='hold'}
+plot(1:10)
+plot(10:1)
+```
+
+You can enable figure captions by `fig_caption: yes` in YAML:
+
+    output:
+      rmarkdown::html_vignette:
+        fig_caption: yes
+
+Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+
+## More Examples
+
+You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
+
+```{r, echo=FALSE, results='asis'}
+knitr::kable(head(mtcars, 10))
+```
+
+Also a quote using `>`:
+
+> "He who gives up [code] safety for [code] speed deserves neither."
+([via](https://twitter.com/hadleywickham/status/504368538874703872))
