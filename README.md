@@ -1,2 +1,4 @@
 # HAPS-GP
-A Pipeline for Spatio-Temporal mapping of Hazardous Air Pollutant using Gaussian Process
+A Pipeline for Spatio-Temporal mapping of Hazardous Air Pollutants using Gaussian Process
+
+This project maps concentrations of hazardous air pollutants (HAPs) at fine resolution across the United States in recent years (2018-2021). We utilize a multivariate, penalized, land-use-regression model with spatiotemporally correlated errors to simultaneously model several HAPs of interest, using HAPs data from the EPA’s Ambient Monitoring Archive and covariate data from several atmospheric, meteorological, land cover, and emissions variables, among others. We use Multivariate Matern Gaussian Process modeling coupled with the General Vecchia approximation, enabling for simultaneous variable selection for the LUR and estimation of both fixed and random effects for a large number of variables. Additionally, we employ state-of-the-art analysis pipelines ensuring the model and results are reproducible and tested.
