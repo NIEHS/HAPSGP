@@ -177,7 +177,6 @@ most_freq_sample <- data2 %>%
   arrange(desc(Most_Frequent_Frequency))
 
 
-
 #####
 #Frequency of non-detects?
 #####
@@ -187,7 +186,6 @@ distinct_dates <- data2 %>%
   summarise(Unique_Dates = n_distinct(time)) %>%
   mutate(Percent = (Unique_Dates / unique_days) * 100) %>%
   arrange(desc(Unique_Dates))
-
 
 
 # What chemicals have the most frequent sampling codes? Is it separated by chemical type?
