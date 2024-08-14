@@ -1,5 +1,5 @@
 # HAPS exploratory analysis
-setwd("/ddn/gs1/home/kassienma/HAPS-GP/R")
+#setwd("/ddn/gs1/home/kassienma/HAPS-GP/R")
 source("download_haps.R")
 source("process_haps.R")
 library(amadeus)
@@ -10,7 +10,7 @@ library(ggplot2)
 library(gridExtra)
 
 
-vars=c("AMA_SITE_CODE", "AQS_POC" , "SAMPLE_DATE", "DURATION_DESC", 
+vars=c("AMA_SITE_CODE", "AQS_POC" , "SAMPLE_DATE", "DURATION_DESC",
        "SAMPLE_VALUE_REPORTED","AQS_UNIT_CODE","UNIT_DESC",
        "SAMPLING_FREQUENCY_CODE","SAMPLE_VALUE_STD",
        "SAMPLE_VALUE_STD_FINAL_UG_M3","SAMPLE_VALUE_STD_FINAL_TYPE",
@@ -42,8 +42,9 @@ vars=c("AMA_SITE_CODE", "AQS_POC" , "SAMPLE_DATE", "DURATION_DESC",
 # Save data.table so I don't have to keep loading it every time
 #saveRDS(data, "/ddn/gs1/home/kassienma/HAPS-GP/input/HAPS_data_exploratory.rds")
 
-data <- readRDS("/ddn/gs1/home/kassienma/HAPS-GP/input/HAPS_data_exploratory.rds")
-data <- readRDS("/Volumes/HAPS-GP/input/HAPS_data_exploratory.rds")
+#data <- readRDS("/ddn/gs1/home/kassienma/HAPS-GP/input/HAPS_data_exploratory.rds")
+data <- readRDS("input/HAPS_data_exploratory.rds") #relative path
+
 #Number of chemicals
 length(unique(data$AQS_PARAMETER_NAME_FINAL))
 #132 chemicals between 2018 and 2021
@@ -102,24 +103,26 @@ sum(is.na(distinct_locations$Year_2018))
 
 
 #####
-# Filter based on spatial missingness 
+# Filter based on spatial missingness
 #####
 
 chem_50p=distinct_locations$AQS_PARAMETER_NAME_FINAL[distinct_locations$Distinct_Locations>=50]
 # This leaves 76 chemicals
-data_50p= data %>% filter(AQS_PARAMETER_NAME_FINAL %in% chem_50p)
+data2= data %>% filter(AQS_PARAMETER_NAME_FINAL %in% chem_50p)
 
 #Chemical classes - How to classify?
-
+#####
 #Sampling frequency - what % of data are every how many days?
-sfreq <- table(data$SAMPLING_FREQUENCY_CODE) |>
+######
+
+sfreq <- table(data2$SAMPLING_FREQUENCY_CODE) |>
   as.data.frame() |>
   dplyr::arrange(desc(Freq)) |>
   dplyr::mutate(Percent = Freq / sum(Freq) * 100)
 View(sfreq)
 
 # Summarize the frequency of SAMPLING_FREQUENCY_NAME per AQS_PARAMETER_CODE_FINAL
-frequency_table <- data |>
+frequency_table <- data2 |>
   group_by(AQS_PARAMETER_NAME_FINAL, SAMPLING_FREQUENCY_CODE) |>
   summarise(Frequency = n()) |>
   group_by(AQS_PARAMETER_NAME_FINAL) |>
@@ -127,7 +130,7 @@ frequency_table <- data |>
   arrange(AQS_PARAMETER_NAME_FINAL, desc(Frequency))
 
 # Calculate the most frequent chemical per sampling frequency
-most_frequent <- data %>%
+most_frequent <- data2 %>%
   group_by(AQS_PARAMETER_NAME_FINAL, SAMPLING_FREQUENCY_CODE) %>%
   summarise(Frequency = n()) %>%
   arrange(AQS_PARAMETER_NAME_FINAL, desc(Frequency)) %>%
@@ -135,17 +138,59 @@ most_frequent <- data %>%
   group_by(SAMPLING_FREQUENCY_CODE) %>%
   summarise(Most_Frequent_Frequency = n()) %>%
   arrange(desc(Most_Frequent_Frequency))
+######
+#Does frequency change have to do with change in sample kind?
+# Redo previous charts for sampling type
+######
 
-#Frequency of non-detects? 
-unique_days=length(unique(data$time))
-distinct_dates <- data %>%
+#Sampling kind - what % of data are have each sampling type?
+skind <- table(data2$AQS_METHOD_CODE) |>
+  as.data.frame() |>
+  dplyr::arrange(desc(Freq)) |>
+  dplyr::mutate(Percent = Freq / sum(Freq) * 100)
+View(skind)
+
+skind <- table(data2$DURATION_DESC) |>
+  as.data.frame() |>
+  dplyr::arrange(desc(Freq)) |>
+  dplyr::mutate(Percent = Freq / sum(Freq) * 100)
+View(skind)
+
+
+
+# Summarize the frequency of SAMPLE_COLLECTION_DESC per AQS_PARAMETER_CODE_FINAL
+sample_table <- data2 |>
+  group_by(AQS_PARAMETER_NAME_FINAL, SAMPLE_COLLECTION_DESC) |>
+  summarise(Frequency = n()) |>
+  group_by(AQS_PARAMETER_NAME_FINAL) |>
+  mutate(Percent = Frequency / sum(Frequency) * 100) |>
+  arrange(AQS_PARAMETER_NAME_FINAL, desc(Frequency))
+
+# Calculate the most frequent chemical per sampling kind
+most_freq_sample <- data2 %>%
+  group_by(AQS_PARAMETER_NAME_FINAL, SAMPLE_COLLECTION_DESC) %>%
+  summarise(Frequency = n()) %>%
+  arrange(AQS_PARAMETER_NAME_FINAL, desc(Frequency)) %>%
+  slice(1) %>%
+  group_by(SAMPLE_COLLECTION_DESC) %>%
+  summarise(Most_Frequent_Frequency = n()) %>%
+  arrange(desc(Most_Frequent_Frequency))
+
+
+
+#####
+#Frequency of non-detects?
+#####
+unique_days=length(unique(data2$time))
+distinct_dates <- data2 %>%
   group_by(AQS_PARAMETER_NAME_FINAL) %>%
   summarise(Unique_Dates = n_distinct(time)) %>%
   mutate(Percent = (Unique_Dates / unique_days) * 100) %>%
   arrange(desc(Unique_Dates))
 
-#Does frequency change have to do with change in sample kind?
+
+
 # What chemicals have the most frequent sampling codes? Is it separated by chemical type?
 
-# Does sample frequency represent a cumulative measurement? 
+# Does sample frequency represent a cumulative measurement?
 # Include sample duration back? Read tech report to figure this out
