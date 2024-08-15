@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(HAPS-GP)
+library(HAPSGP)
 
-test_check("HAPS-GP")
+test_check("HAPSGP")
