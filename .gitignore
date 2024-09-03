@@ -1,4 +1,5 @@
 input/
+output/
 ._*
 .DS_Store
 .Rproj.user
