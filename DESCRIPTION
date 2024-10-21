@@ -5,6 +5,8 @@ Authors@R:
     person("Mariana", "Alifa Kassien", , "mariana.kassien@nih.gov", role = c("aut", "cre"),
            comment = c(ORCID = "https://orcid.org/0000-0003-2295-406X"))
 Description: This project maps concentrations of hazardous air pollutants, HAPs, at fine resolution across the United States in recent years, 2018-2021.
+Depends: R (>= 4.1.0)
+Imports: testthat, installr, data.table, reshape, NADA, readr, openxlsx, stringr, tidyr, devtools, dplyr, plyr, ggplot2, gridExtra, lubridate, sf, stats
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

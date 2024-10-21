@@ -15,11 +15,11 @@
 #setwd("/Users/kassienma/HAPS-GP/")
 
 # load all libraries
-#library(installr)
-#library(plyr)
+library(installr)
+library(plyr)
 library(data.table)
-#library(reshape)
-#library(NADA)
+library(reshape)
+library(NADA)
 library(readr)
 library(openxlsx)
 library(dplyr)
