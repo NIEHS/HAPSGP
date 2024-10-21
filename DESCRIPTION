@@ -12,4 +12,4 @@ RoxygenNote: 7.2.3
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
-URL: https://niehs.github.io/HAPSGP/
+URL: https://niehs.github.io/HAPSGP/, https://curly-adventure-v76pzjm.pages.github.io/
