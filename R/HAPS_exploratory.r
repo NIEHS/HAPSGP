@@ -1,7 +1,7 @@
 # HAPS exploratory analysis
 #setwd("/ddn/gs1/home/kassienma/HAPS-GP/R")
-source("download_haps.R")
-source("process_haps.R")
+source("R/download_haps.R")
+source("R/process_haps.R")
 library(amadeus)
 library(dplyr)
 library(lubridate)

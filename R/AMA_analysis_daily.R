@@ -12,14 +12,14 @@
 #
 
 # set working directory
-setwd("/Users/kassienma/HAPS-GP/")
+#setwd("/Users/kassienma/HAPS-GP/")
 
 # load all libraries
-library(installr)
+#library(installr)
 library(plyr)
 library(data.table)
-library(reshape)
-library(NADA)
+#library(reshape)
+#library(NADA)
 library(readr)
 library(openxlsx)
 library(dplyr)
@@ -37,8 +37,8 @@ source('R/AMA_duration2daily.R')
 ## directory folder names and variables
 
 amayr = 2021 # version year for the AMA
-allyears = 2018# years of AMA data
-data.dir = "input/HAPS/" # directory for all AMA files
+allyears = (2018:2021)# years of AMA data
+data.dir = "input/" # directory for all AMA files
 results.dir = "output/" # directory for all results
 
 ## create directory folders if they do not already exist
