@@ -18,7 +18,7 @@
 #
 
 # set working directory
-setwd('SET WORKING DIRECTORY')
+#setwd('SET WORKING DIRECTORY')
 
 # load all libraries
 library(installr)
