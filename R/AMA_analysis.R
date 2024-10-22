@@ -33,11 +33,11 @@ library(stringr)
 library(tidyr)
 
 # functions to source
-source('AMA_LC2STDRatio.R')
-source('AMA_preprocessing.R')
-source('AMA_duration2daily.R')
-source('AMA_daily2annual.R')
-source('AMA_file.R')
+source('R/AMA_LC2STDRatio.R')
+source('R/AMA_preprocessing.R')
+source('R/AMA_duration2daily.R')
+source('R/AMA_daily2annual.R')
+source('R/AMA_file.R')
 
 ##### CREATE DIRECTORIES AND GLOBAL VARIABLES #####
 
