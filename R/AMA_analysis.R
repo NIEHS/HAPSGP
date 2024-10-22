@@ -44,9 +44,9 @@ source('R/AMA_file.R')
 ## directory folder names and variables
 
 amayr = 2021 # version year for the AMA
-allyears = 1990:2021 # years of AMA data
-data.dir = paste0('../RData',amayr,'/') # directory for all AMA files
-results.dir = paste0('../RDataCreated',amayr,'/') # directory for all results
+allyears = 2018:2021 # years of AMA data
+data.dir = "input/" # directory for all AMA files
+results.dir = "output/" # directory for all results
 
 ## create directory folders if they do not already exist
 
