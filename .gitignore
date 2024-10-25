@@ -8,8 +8,7 @@ output/
 .httr-oauth
 .quarto
 docs
-R/AMA_analysis*
-R/AMA_file.R
 R/HAPS_exploratory*
-R/Match_HAPS_Tox.R
 HAPS_exploratory.Rmd
+R/Match_HAPS_Tox.R
+R/AMA_analysis*
