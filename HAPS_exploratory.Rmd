@@ -139,6 +139,30 @@ saveRDS(AMA_stats, "input/HAPS_exploratory.RDS")
 ```{r}
 DT::datatable(
   AMA_stats,
-  height = 200,
+  height = 100,
   options = list(scrollX = TRUE))
+
+```
+### Apply some filters to select first few chemicals for analysis
+```{r}
+# Set filter parameters
+loc=200 # Min number of locations
+percnd=33 #Max perc of nondetects
+meandays=150 #Min number of mean days per site
+
+# Clear some of the columns for visibility
+drop.cols=c("AQS_PARAMETER_CODE","POLLUTANT_CASNUM","min_DatesPerSite","max_DatesPerSite","T21_flag","BelowALTMDL","SAMPLING_DURATION_MODE", "SAMPLING_FREQUENCY_MODE")
+
+# Apply filters and select relevant columns
+AMA_stats_f = AMA_stats %>% dplyr::filter(Distinct_Locations>loc, NonDetects<percnd, mean_DatesPerSite>meandays, T21_flag==T)%>%
+select(-one_of(drop.cols))
+
+# Quick renaming for a compact table
+colnames(AMA_stats_f)=c("Name","Sites","ND%","BelMD%","AbvMDL%","Avgdates")
+
+DT::datatable(
+  AMA_stats_f,
+  height = 10,
+  options = list(scrollX = TRUE))
+
 ```
