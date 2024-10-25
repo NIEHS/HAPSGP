@@ -10,5 +10,4 @@ output/
 docs
 R/HAPS_exploratory*
 HAPS_exploratory.Rmd
-R/Match_HAPS_Tox.R
 R/AMA_analysis*
