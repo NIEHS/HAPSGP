@@ -1,4 +1,9 @@
-url: https://curly-adventure-v76pzjm.pages.github.io/
+url: https://niehs.github.io/HAPSGP/
 template:
   bootstrap: 5
+  bootswatch: minty
 
+navbar:
+  structure:
+    left:  [reference, articles, search]
+    right: [github]
