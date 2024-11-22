@@ -39,6 +39,8 @@ AMA_duration2daily <- function(results.dir,amayr,allyears){
     print(allyears[i])
     load(paste0(results.dir,'AMA',amayr,'_preprocessing_',allyears[i],'.Rda'))
     
+    AMA = AMA %>%  mutate(ALTERNATE_MDL = as.numeric(ALTERNATE_MDL)) #Patch for ALT_MDL
+    
     AMA_sub = AMA %>%
       subset(!(PROGRAM %like% 'NOAA' | PROGRAM %like% 'MIT')) %>% # subset to non-remote data
       group_by(AQS_PARAMETER_CODE,AMA_SITE_CODE,YEAR,AQS_POC) %>% # group by pollutant/site/poc/year
@@ -55,6 +57,7 @@ AMA_duration2daily <- function(results.dir,amayr,allyears){
       summarize(CONC_RATIO_HR=mean(CONC_RATIO,na.rm=T), # mean of derived concentrations using LCSTDratio
                 SAMPLE_VALUE_STD_HR=mean(SAMPLE_VALUE_STD), # mean of concentrations in standard conditions
                 MDL_STD_UG_M3_HR=mean(MDL_STD_UG_M3,na.rm=T), # mean of MDL in standard conditions
+                ALTERNATE_MDL_HR=mean(ALTERNATE_MDL,na.rm=T), # mean of alternate MDL 
                 N_HR=length(na.omit(CONC_RATIO)), # number of non-null values
                 N0_HR=sum(CONC_RATIO==0,na.rm=T)) %>% # number of zeros
       ungroup() %>%
@@ -65,6 +68,7 @@ AMA_duration2daily <- function(results.dir,amayr,allyears){
       summarize(CONC_RATIO=mean(CONC_RATIO_HR,na.rm=T), # mean of hourly concentrations
                 SAMPLE_VALUE_STD=mean(SAMPLE_VALUE_STD_HR,na.rm=T), # mean of hourly concentrations in standard conditions
                 MDL_STD_UG_M3=mean(MDL_STD_UG_M3_HR,na.rm=T), # mean of hourly MDL in standard conditions
+                ALTERNATE_MDL=mean(ALTERNATE_MDL_HR,na.rm=T), # mean of alternate MDL 
                 N_DAY=length(na.omit(CONC_RATIO_HR)), # number of non-null hourly values in a day
                 N0_DAY=sum(CONC_RATIO_HR==0,na.rm=T)) %>% # number of hourly zeros values in a day
       ungroup() %>%
@@ -98,13 +102,14 @@ AMA_duration2daily <- function(results.dir,amayr,allyears){
       summarize(CONC_RATIO_DAY=mean(CONC_RATIO,na.rm=T), # mean of derived concentrations using LCSTDratio
                 SAMPLE_VALUE_STD_DAY=mean(SAMPLE_VALUE_STD,na.rm=T), # mean of concentrations in standard conditions
                 MDL_STD_UG_M3_DAY=mean(MDL_STD_UG_M3,na.rm=T), # mean of hourly MDL in standard conditions
+                ALTERNATE_MDL_DAY=mean(ALTERNATE_MDL,na.rm=T), # mean of alternate MDL 
                 N_DAY=length(na.omit(CONC_RATIO)), # number of non-null values
                 N0_DAY=sum(CONC_RATIO==0,na.rm=T)) %>% # number of zeros
       ungroup() %>%
       join(duration_scales[,c('DURATION_DESC','MINIMUM_COUNT')]) %>% # join min threshold counts
       subset(N_DAY>=MINIMUM_COUNT) %>% # subset to days that meet the min number of samples/day
-      setnames(old=c('CONC_RATIO_DAY','SAMPLE_VALUE_STD_DAY','MDL_STD_UG_M3_DAY'),
-               new=c('CONC_RATIO','SAMPLE_VALUE_STD','MDL_STD_UG_M3')) %>% # rename fields so rbind can be used next
+      setnames(old=c('CONC_RATIO_DAY','SAMPLE_VALUE_STD_DAY','MDL_STD_UG_M3_DAY','ALTERNATE_MDL_DAY'),
+               new=c('CONC_RATIO','SAMPLE_VALUE_STD','MDL_STD_UG_M3','ALTERNATE_MDL')) %>% # rename fields so rbind can be used next
       select(-MINIMUM_COUNT) %>% # remove field so rbind can be used next
       mutate_all(~case_when(is.nan(.) ~ NA, .default = .)) # add catch to convert NaN to NA
     
@@ -139,10 +144,11 @@ AMA_duration2daily <- function(results.dir,amayr,allyears){
       summarize(CONC_DAILY_UG_M3=mean(CONC_RATIO,na.rm=T), # mean of values
                 CONC_DAILY_STD=mean(SAMPLE_VALUE_STD,na.rm=T), # mean of values in standard conditions
                 MDL_DAILY_STD_UG_M3=mean(MDL_STD_UG_M3,na.rm=T), # mean of MDLs in standard conditions
+                ALTERNATE_MDL_DAILY=mean(ALTERNATE_MDL,na.rm=T), # mean of alternate MDL 
                 SAMPLING_FREQUENCY_DAILY=mode_STR(SAMPLING_FREQUENCY_MODE), # mode sampling frequency
                 POC_COUNT=length(na.omit(CONC_RATIO)), # number of non-null values
                 ZERO_COUNT=length(na.omit(CONC_RATIO)==0)) %>% # number of zeros
-      mutate(across(c(CONC_DAILY_UG_M3,CONC_DAILY_STD,MDL_DAILY_STD_UG_M3),~ifelse(is.nan(.),NA,.))) # add catch to convert NaN to NA
+      mutate(across(c(CONC_DAILY_UG_M3,CONC_DAILY_STD,MDL_DAILY_STD_UG_M3,ALTERNATE_MDL_DAILY),~ifelse(is.nan(.),NA,.))) # add catch to convert NaN to NA
     
     ##### PART 5: CALCULATE DAILY AVERAGES FOR REMOTE DATA #####
     
@@ -162,6 +168,7 @@ AMA_duration2daily <- function(results.dir,amayr,allyears){
       summarize(CONC_DAILY_UG_M3=mean(CONC_RATIO,na.rm=TRUE), # mean of values
                 CONC_DAILY_STD=mean(SAMPLE_VALUE_STD,na.rm=TRUE), # mean of values in standard conditions
                 MDL_DAILY_STD_UG_M3=mean(MDL_STD_UG_M3,na.rm=TRUE), # mean of MDLs in standard conditions
+                ALTERNATE_MDL_DAILY=mean(ALTERNATE_MDL,na.rm=T), # mean of alternate MDL 
                 SAMPLING_FREQUENCY_DAILY=mode_STR(SAMPLING_FREQUENCY_MODE)) %>% # mode sampling frequency
       ungroup() %>%
       mutate_all(~case_when(is.nan(.) ~ NA, .default = .)) # add catch to convert NaN to NA

@@ -66,7 +66,7 @@ AMA_duration2daily_mod <- function(results.dir,amayr,allyears){
   #if(lognormal==T){
   #return(exp(mle_log$par))}
   #else{
-  return(mle$par)[1]
+  return(mle$par[1])
   #}
  }
 
@@ -77,14 +77,6 @@ AMA_duration2daily_mod <- function(results.dir,amayr,allyears){
   dur_minute = duration_scales[duration_scales$AVERAGE_TO=='HOURLY','DURATION_DESC']
   dur_hour = duration_scales[duration_scales$AVERAGE_TO=='DAILY','DURATION_DESC']
   
-  # reading in pollutant CAS numbers
-  load(paste0(data.dir,"AMA_POLLUTANT_CODES_DICTIONARY.Rda")) #pollutant codes metadata
-
-  # reading in tox21 data to filter chemicals with tox data only
-  tox21=read.xlsx(paste0(data.dir,"Tox21.xlsx"))%>%
-    mutate(CAS_nodash = gsub('-','',CASRN))
-  tox21_cas=unique(tox21$CAS_nodash)
-
   ##### PART 2, PART 3, PART 4, PART 5 #####
   
   # looping through each year
@@ -93,40 +85,23 @@ AMA_duration2daily_mod <- function(results.dir,amayr,allyears){
     # load pre-processed AMA data
     print(allyears[i])
     load(paste0(results.dir,'AMA',amayr,'_preprocessing_',allyears[i],'.Rda'))
-    
-    # Filter to Tox21 chemicals
-    AMA_t21 = AMA %>%
-      join(AMA_POLLUTANT_CODES_DICTIONARY[,c('AQS_PARAMETER_CODE','POLLUTANT_CASNUM')])%>%
-      filter(as.character(POLLUTANT_CASNUM) %in% tox21_cas)
-
-    AMA_sub = AMA_t21 %>%
-    #AMA_sub = AMA %>%
+   
+    AMA_sub = AMA %>%
       subset(!(PROGRAM %like% 'NOAA' | PROGRAM %like% 'MIT')) %>% # subset to non-remote data
       group_by(AQS_PARAMETER_CODE,AMA_SITE_CODE,YEAR,AQS_POC) %>% # group by pollutant/site/poc/year
       mutate(SAMPLING_FREQUENCY_MODE = mode_STR(SAMPLING_FREQUENCY_CODE)) %>% # mode samp freq for each pollutant/site/POC/year
       ungroup()
-
-  # Check number of variables detected below MDL
-  AMA_detectstats <- AMA_sub %>%
-  group_by(AQS_PARAMETER_NAME) %>%
-  #summarize(Distinct_Locations = n_distinct(paste(MONITOR_LATITUDE, MONITOR_LONGITUDE)))# %>%
-  summarize(NonDetects = 100*sum(SAMPLE_VALUE_FLAG=="ND")/sum(!is.na(SAMPLE_VALUE_STD)),
-            BelowMDL = 100*sum(BELOW_MDL_FLAG=="Y")/sum(!is.na(SAMPLE_VALUE_STD)),
-            BelowALTMDL =100*sum(SAMPLE_VALUE_STD > ALTERNATE_MDL)/sum(!is.na(SAMPLE_VALUE_STD)),
-            AboveMDL = 100*sum(SAMPLE_VALUE_FLAG=="" & BELOW_MDL_FLAG=="" & !is.na(SAMPLE_VALUE_STD) )/sum(!is.na(SAMPLE_VALUE_STD))) %>%
-  arrange(desc(BelowMDL))
-
-
-
+    
+    
     ##### PART 2: COMPUTE DAILY AVERAGES FROM MINUTE DATA #####
     
     # average the minute sampling durations
+    # For the AGU analysis, only 1 site had sub-hour durations and not enough for hourly averages
     AMA_min2d = AMA_sub %>%
-      subset(DURATION_DESC %in% dur_minute) %>%
-      mutate(CONC_RATIO2 = CONC_RATIO) %>% # subset to minute sampling durations
-      group_by(SAMPLE_DATE,AQS_PARAMETER_CODE,AMA_SITE_CODE,AQS_POC,QUARTER,YEAR,DURATION_DESC,
-               PROGRAM,STATE_ABBR,HOUR,SAMPLING_FREQUENCY_MODE,AQS_PARAMETER_NAME,CONC_RATIO2,SAMPLE_VALUE_STD,MDL_STD_UG_M3) %>% # group by pollutant/site/poc/day/hour/duration
-      summarize(N_HR=length(na.omit(CONC_RATIO)), # number of non-null values
+    subset(DURATION_DESC %in% dur_minute) #%>%
+    group_by(SAMPLE_DATE,AQS_PARAMETER_CODE,AMA_SITE_CODE,AQS_POC,QUARTER,YEAR,DURATION_DESC,
+            PROGRAM,STATE_ABBR,HOUR,SAMPLING_FREQUENCY_MODE,AQS_PARAMETER_NAME) %>% # group by pollutant/site/poc/day/hour/duration
+    summarize(N_HR=length(na.omit(CONC_RATIO)), # number of non-null values
                 N0_HR=sum(CONC_RATIO==0,na.rm=T)) %>%# number of zeros
       ungroup() %>%
       join(duration_scales[,c('DURATION_DESC','MINIMUM_COUNT')]) %>% # join min threshold counts
@@ -182,7 +157,8 @@ AMA_min2d_onesite = AMA_onesite %>%
     
     # average the hourly sampling durations
     AMA_hr2d = AMA_sub %>%
-      subset(DURATION_DESC %in% dur_hour) %>% # subset to hourly sampling durations
+      #subset(DURATION_DESC %in% dur_hour) %>% # subset to hourly sampling durations
+      subset(DURATION_DESC == "1 HOUR") %>% # subset to hourly sampling durations
       mutate(PULL_DATE = as.numeric(str_sub(as.character(DATA_SOURCE),-8))) %>% # add pull date of data source
       ### CATCH START - deal with '24 HOURS' collocated by pollutant/site/POC/day/sampling duration (multiple pull dates)
       group_by(SAMPLE_DATE,AQS_PARAMETER_CODE,AMA_SITE_CODE,AQS_POC,QUARTER,YEAR,
@@ -192,21 +168,24 @@ AMA_min2d_onesite = AMA_onesite %>%
              ALL_EQUAL=length(na.omit(unique(CONC_RATIO)))==1, # if collocation, all values are equal (T/F)
              MIN_PULLDATE=min(PULL_DATE,na.rm=T), # if collocation, the min pull date of values
              MAX_PULLDATE=max(PULL_DATE,na.rm=T)) %>% # if collocation the max pull date of values
-      ungroup() #%>%
+      ungroup() %>%
       subset(!(DURATION_DESC=='24 HOURS' & N_DAY==2 & N0_DAY==1 & CONC_RATIO==0)) %>% # 2 coll vals AND 1 val=0 -> remove the 0
       subset(!(DURATION_DESC=='24 HOURS' & N_DAY==2 & N0_DAY==0 & ALL_EQUAL==FALSE &
                  MIN_PULLDATE!=MAX_PULLDATE & PULL_DATE==MIN_PULLDATE)) %>% # 2 coll AND non-zero AND diff vals AND diff pull dates -> remove earlier val
-      select(-c('N_DAY','N0_DAY','ALL_EQUAL','MIN_PULLDATE','MAX_PULLDATE')) %>% # remove all fields created for this catch
+      select(-c('N_DAY','N0_DAY','ALL_EQUAL','MIN_PULLDATE','MAX_PULLDATE'))%>% # remove all fields created for this catch
       ### CATCH END
-      group_by(SAMPLE_DATE,AQS_PARAMETER_CODE,AMA_SITE_CODE,AQS_POC,QUARTER,YEAR,
-               DURATION_DESC,PROGRAM,STATE_ABBR,SAMPLING_FREQUENCY_MODE,AQS_PARAMETER_NAME) %>% # group by pollutant/site/poc/day/duration
-      summarize(CONC_RATIO_DAY=mean(CONC_RATIO,na.rm=T), # mean of derived concentrations using LCSTDratio
-                SAMPLE_VALUE_STD_DAY=mean(SAMPLE_VALUE_STD,na.rm=T), # mean of concentrations in standard conditions
-                MDL_STD_UG_M3_DAY=mean(MDL_STD_UG_M3,na.rm=T), # mean of hourly MDL in standard conditions
-                N_DAY=length(na.omit(CONC_RATIO)), # number of non-null values
-                N0_DAY=sum(CONC_RATIO==0,na.rm=T)) %>% # number of zeros
-      ungroup() %>%
+      group_by(AQS_PARAMETER_CODE,SAMPLE_DATE,AMA_SITE_CODE,AQS_POC,QUARTER,YEAR,
+               DURATION_DESC,PROGRAM,STATE_ABBR,SAMPLING_FREQUENCY_MODE,AQS_PARAMETER_NAME) %>% 
+      mutate(N_DAY=length(na.omit(CONC_RATIO)), # number of non-null values
+                N0_DAY=sum(CONC_RATIO==0,na.rm=T)) %>%# group by pollutant/site/poc/day/duration
       join(duration_scales[,c('DURATION_DESC','MINIMUM_COUNT')]) %>% # join min threshold counts
+      subset(N_DAY>=MINIMUM_COUNT) %>%           
+      summarize(CENS_VALUE = censmean (SAMPLE_VALUE_STD,MDL_STD_UG_M3,params=NULL, lognormal=F), #censored mean based on MDL
+                SAMPLE_VALUE_STD_DAY=mean(SAMPLE_VALUE_STD,na.rm=T), # mean of concentrations in standard conditions
+                CONC_RATIO_DAY=mean(CONC_RATIO,na.rm=T), # mean of derived concentrations using LCSTDratio
+                MDL_STD_UG_M3_DAY=mean(MDL_STD_UG_M3,na.rm=T)) #%>% , # mean of hourly MDL in standard conditions
+      ungroup() %>%
+      join(duration_scales[,c('DURATION_DESC','MINIMUM_COUNT')]) #%>% # join min threshold counts
       subset(N_DAY>=MINIMUM_COUNT) %>% # subset to days that meet the min number of samples/day
       setnames(old=c('CONC_RATIO_DAY','SAMPLE_VALUE_STD_DAY','MDL_STD_UG_M3_DAY'),
                new=c('CONC_RATIO','SAMPLE_VALUE_STD','MDL_STD_UG_M3')) %>% # rename fields so rbind can be used next

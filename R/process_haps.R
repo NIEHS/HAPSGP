@@ -1,10 +1,9 @@
-#' Process land cover data
+#' Process HAPS data
 #' @description
-#' The \code{process_haps()} function imports and cleans raw land cover data,
-#' returning a single `SpatRaster` object.
-#' @param path character giving nlcd data path
+#' The \code{process_haps()} function imports and cleans HAPs data
+#' @param path character giving data path
 #' @param year numeric giving the year of HAPs data used
-#' @param sites_file character(1) name of metadata file for sites' datum
+#' @param sites_file character(1) path to metadata file for sites' datum and lat-lon
 #' @param mode character(1). One of "date-location" (all dates * all locations)
 #' or "available-data" (date-location pairs with available data) or
 #' "location" (unique locations).
@@ -61,7 +60,7 @@ process_haps <-
     date_sequence <- as.character(date_sequence)
     year_vec=unique(format.Date(date_sequence,"%Y"))
     
-    filenames <- paste0("AMA_", year_vec, ".Rda")
+    filenames <- paste0('AMA2021_daily_',year_vec,'.Rda')
     haps_file <-
       list.files(path, full.names=T)[list.files(path) %in% filenames]
     if (length(haps_file) == 0) {
@@ -74,6 +73,7 @@ process_haps <-
       # multiple years. Maybe there is a more efficient way to do this?
       for(n in 1:length(haps_file)){
       load(haps_file[n])
+      AMA=daily #dirty fix for naming differences
       if(n==1){
         AMA_f=AMA
       }else{
@@ -86,8 +86,16 @@ process_haps <-
     }else{
       # Load data
       load(haps_file)
+      AMA=daily #dirty fix for naming differences
     }
 
+    # Import sites metadata file to find Datum information
+    #meta_file <- list.files(path, full.names=T)[list.files(path) %in% sites_file]
+    load(sites_file)
+
+    # Append latitude and longitude
+    AMA <- dplyr::left_join(AMA, AMA_SITE_INFORMATION |> dplyr::select(AMA_SITE_CODE, MONITOR_LONGITUDE, MONITOR_LATITUDE), by = "AMA_SITE_CODE")
+    
     # Fix dates to standard format
     AMA$SAMPLE_DATE <- as.Date(AMA$SAMPLE_DATE, format = "%m/%d/%Y")
     AMA$SAMPLE_DATE <- format(AMA$SAMPLE_DATE, "%Y-%m-%d")
@@ -104,7 +112,7 @@ process_haps <-
       names(AMA_v)[3:4] <- c("lon", "lat")
     } else {
       col_sel <- append(col_sel, "SAMPLE_DATE")
-      col_sel <- append(col_sel, vars)
+      col_sel <- append(col_sel, data_field)
       
       AMA_v <- AMA |>
         dplyr::select(dplyr::all_of(col_sel)) |>
@@ -117,10 +125,6 @@ process_haps <-
     AMA_v <- data.table::as.data.table(AMA_v)
     AMA_v <- AMA_v[!grepl("^(AK|HI|PR|VI)", STATE_ABBR), ] 
     AMA_v <- AMA_v[,-1] # remove "STATE_ABBR" variable
-    
-    # Import sites file to find Datum information
-    datum_file <- list.files(path, full.names=T)[list.files(path) %in% sites_file]
-    load(datum_file)
 
     # Append datum to sites
     # Perform the join
