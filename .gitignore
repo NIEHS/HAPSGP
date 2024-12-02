@@ -11,3 +11,6 @@ docs
 R/HAPS_exploratory*
 HAPS_exploratory.Rmd
 R/AMA_analysis*
+*.out
+*.error
+*.sh
