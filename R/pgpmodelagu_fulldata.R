@@ -9,15 +9,16 @@ library(dplyr)
 
 setwd("/ddn/gs1/home/kassienma/HAPSGP/")
 
-dates=c("2018-01-01","2021-12-31")
+dates=c("2021-01-01","2021-12-31")
+print(dates)
 dates_vec=seq(as.Date(dates[1]), as.Date(dates[2]), "days")
 
 # Read in HAPS
 df=readRDS("output/AGU/haps_gridmet_208-2021.rds")
 
 # remove rows with measurement=0 (will change this later)
-df= df %>% filter(CONC_DAILY_UG_M3 != 0)
-
+df= df %>% filter(CONC_DAILY_UG_M3 != 0) %>%
+  filter(CONC_DAILY_UG_M3 < 300 )
 # remove rows with NA's in MDL (may change this later)
 mdl_ind = which(colnames(df)== "MDL_DAILY_STD_UG_M3")
 df <- df[!Reduce(`|`, lapply(df[, mdl_ind, drop = FALSE], is.na)), ]
@@ -71,6 +72,8 @@ lodsm[[i]] <- lods3
 # Multivariate Vecchia model
 all.mvm <-  new("MultivariateVecchiaModel", n_neighbors = 10)
 all.mvm2 <- prestogp_fit(all.mvm, ym, Xm, locsm, lod=lodsm, scaling = c(1, 1, 2),impute.y=TRUE, verbose=TRUE)
+
+print("Model fit done. Saving results...")
 
 # Add output to lists
 results=list()
