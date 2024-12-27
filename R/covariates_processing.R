@@ -6,6 +6,10 @@ library(dplyr)
 
 setwd("/ddn/gs1/home/kassienma/HAPSGP/")
 
+output="covonly"
+#fname="output/AGU/haps_gridmet_2018-2021.rds"
+fname="output/AGU/gridmet_process_2018-2021.rds"
+
 #################
 #### HAPs sites data
 source("R/process_haps.R")
@@ -18,8 +22,6 @@ haps_locs=process_haps(path = "output/AGU/",
   #data_field = vars,
   return_format = "data.table")
 
-# Load full haps file (produced via AMA_analysis_agu.R )
-load("output/AGU/haps_df.Rda")
 
 #################
 #### GRIDMET ####
@@ -35,8 +37,11 @@ radiuses=c(0, 10000)
 #variable_gridmet= c("vs")
 
 #Initialize haps dataframe
+if(output=="merged"){
+load("output/AGU/haps_df.Rda") # Load full haps file (produced via AMA_analysis_agu.R )
 dates_haps=seq(as.Date(dates_gridmet[1]), as.Date(dates_gridmet[2]), "days")
 df_full=haps_df %>% filter(time %in% dates_haps)
+}
 
 for (i in 1:length(variables_gridmet)){
   for (j in 1:length(radiuses)){
@@ -57,18 +62,28 @@ for (i in 1:length(variables_gridmet)){
       fun = "mean",
       geom = FALSE
     )
-
     calc$time=as.character(calc$time)
 
-    if(i==1&j==1){
-    merged_data <- merge(df_full, calc, by = c("AMA_SITE_CODE", "time"), all.x = TRUE)
-    } else{
-      merged_data <- merge(merged_data, calc, by = c("AMA_SITE_CODE", "time"), all.x = TRUE)
+    if(output=="merged"){
+      if(i==1&j==1){
+      merged_data = merge(df_full, calc, by = c("AMA_SITE_CODE", "time"), all.x = TRUE)
+      } else{
+        merged_data = merge(merged_data, calc, by = c("AMA_SITE_CODE", "time"), all.x = TRUE)
+      }
+    }else if (output=="covonly"){
+      if(i==1&j==1){
+     merged_data = calc
+      }else{
+        merged_data = merge(merged_data, calc, by = c("AMA_SITE_CODE", "time"), all.x = TRUE)
+      }
+    }else{
+       stop("specify kind of output (merged or covonly)")
     }
+
   } # j radiuses
 } # i covariates
 
-fname="output/AGU/haps_gridmet_208-2021.rds"
+
 saveRDS(merged_data,fname)
 
 #################
