@@ -1,4 +1,5 @@
 ################################################################################
+#nolint start
 ## PURPOSE: AMA_preprocessing.R performs pre-processing of the data to get it in 
 ##          a usable form to calculate daily averages
 ## INPUT:   data.dir - directory for all AMA files (type=character)
@@ -13,7 +14,7 @@
 ##          LC = Local Conditions 
 ##          STD = standard conditions
 ################################################################################
-AMA_preprocessing <- function(data.dir,results.dir,amayr,allyears){
+AMA_preprocessing <- function(filelist_ama,filelist_lcstd,file_lcstdsite,results.dir,amayr,allyears){
   
   ##### PART 1: INITIALIZE AQS PARAMETER LISTS #####
   
@@ -40,13 +41,14 @@ AMA_preprocessing <- function(data.dir,results.dir,amayr,allyears){
                  '86142','86152','86154','86179') # coarse metals
   
   ##### DERIVE LOCAL CONDITIONS FROM LC/STD RATIOS #####
-  
+  filelist=list()
   # looping through each year
-  for(i in 1:length(allyears)){
+  for(i in 1:length(filelist_ama)){
     
     # load year of AMA data
     print(allyears[i])
-    load(paste(data.dir,'AMA_',allyears[i],'.Rda',sep=''))
+    #load(paste(data.dir,'AMA_',allyears[i],'.Rda',sep=''))
+    load(filelist_ama[[i]])
     
     # remove select data and rename select fields
     AMA_sub = data.table(AMA) %>%
@@ -76,9 +78,10 @@ AMA_preprocessing <- function(data.dir,results.dir,amayr,allyears){
              AQS_PARAMETER_NAME = recode(AQS_PARAMETER_NAME, 'Lead Pm10 Lc Frm/Fem' = 'Lead Pm10 Lc')) 
     
     # load LC/STD ratio data
-    load(paste(results.dir,'AMA',amayr,'_LCSTDRatio_',allyears[i],'.Rda',sep='')) # load sites with LC/STD ratio for this year
-    load(paste(results.dir,'AMA',amayr,'_LCSTDRatio_Site','.Rda',sep='')) # load sites with LC/STD ratio across all years
-    
+    #load(paste(results.dir,'AMA',amayr,'_LCSTDRatio_',allyears[i],'.Rda',sep='')) # load sites with LC/STD ratio for this year
+    #load(paste(results.dir,'AMA',amayr,'_LCSTDRatio_Site','.Rda',sep='')) # load sites with LC/STD ratio across all years
+    load(filelist_lcstd[[i]])# load sites with LC/STD ratio for this year
+    load(file_lcstdsite)# load sites with LC/STD ratio across all years
     # derive local concentrations from LC/STD ratios
     AMA = AMA_sub %>% 
       join(AMA_RatioPollPOCDayDur) %>% # join by pollutant/POC/day/sampling duration LC/STD ratios 
@@ -111,9 +114,11 @@ AMA_preprocessing <- function(data.dir,results.dir,amayr,allyears){
     typenms_fill = typenms[!(typenms %in% names(AMA_TYPECOUNT))] # the fields that are missing
     AMA_TYPECOUNT[,typenms_fill] = 0
     
+    fname=paste(results.dir,'AMA',amayr,'_preprocessing_',allyears[i],'.Rda',sep='')
     # save file
-    save(AMA,AMA_TYPECOUNT,file=paste(results.dir,'AMA',amayr,'_preprocessing_',allyears[i],'.Rda',sep=''))
-    
+    save(AMA,AMA_TYPECOUNT,file=fname)
+    filelist[[i]]=fname
   } # looping through each AMA year 
-  
+  return(filelist)
 }
+# nolint end

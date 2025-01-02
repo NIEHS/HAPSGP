@@ -1,4 +1,5 @@
 ################################################################################
+# nolint start
 ## PURPOSE: AMA_duration2daily.R calculates daily averages per
 ##          site/day/pollutant/sampling duration
 ## INPUT:   results.dir - directory for all results (type=character)
@@ -17,7 +18,7 @@
 ##          POC = Parameter Occurrence Code
 ##          STD = standard conditions
 ################################################################################
-AMA_duration2daily <- function(results.dir,amayr,allyears){
+AMA_duration2daily <- function(filelist,data.dir,results.dir,amayr,allyears){
   
   ##### PART 1: INITIALIZE GLOBAL VARIABLES #####
   
@@ -31,14 +32,15 @@ AMA_duration2daily <- function(results.dir,amayr,allyears){
   dur_hour = duration_scales[duration_scales$AVERAGE_TO=='DAILY','DURATION_DESC']
   
   ##### PART 2, PART 3, PART 4, PART 5 #####
-  
+  filelist2=list()
   # looping through each year
-  for(i in 1:length(allyears)){ 
+  for(i in 1:length(filelist)){ 
     
     # load pre-processed AMA data
     print(allyears[i])
-    load(paste0(results.dir,'AMA',amayr,'_preprocessing_',allyears[i],'.Rda'))
-    
+    #load(paste0(results.dir,'AMA',amayr,'_preprocessing_',allyears[i],'.Rda'))
+    load(filelist[[i]])
+
     AMA = AMA %>%  mutate(ALTERNATE_MDL = as.numeric(ALTERNATE_MDL)) #Patch for ALT_MDL
     
     AMA_sub = AMA %>%
@@ -174,8 +176,10 @@ AMA_duration2daily <- function(results.dir,amayr,allyears){
       mutate_all(~case_when(is.nan(.) ~ NA, .default = .)) # add catch to convert NaN to NA
     
     # save file
-    save(daily,AMA_POCCOUNT,daily_REMOTE,AMA_POCCOUNT_REMOTE,file=paste0(results.dir,'AMA',amayr,'_daily_',allyears[i],'.Rda'))
-    
+    fname=paste0(results.dir,'AMA',amayr,'_daily_',allyears[i],'.Rda')
+    save(daily,AMA_POCCOUNT,daily_REMOTE,AMA_POCCOUNT_REMOTE,file=fname)
+    filelist2[[i]]=fname
   } # looping through each AMA year
-  
+  return(filelist2)
 }
+#nolint end

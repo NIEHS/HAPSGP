@@ -5,6 +5,13 @@
 
 # Load packages required to define the pipeline:
 library(targets)
+library(plyr)
+library(dplyr)
+library(data.table)
+library(tidyr)
+library(openxlsx)
+library(stringr)
+library(amadeus)
 # library(tarchetypes) # Load other packages as needed.
 
 # Set target options:
@@ -45,18 +52,19 @@ tar_option_set(
 )
 
 # Run the R scripts in the R/ folder with your custom functions:
-tar_source()
-# tar_source("other_functions.R") # Source other scripts as needed.
+#tar_source()
+tar_source("R/AMA_select.R")
+tar_source('R/AMA_LC2STDRatio.R')
+tar_source('R/AMA_preprocessing.R')
+tar_source('R/AMA_duration2daily.R')
+tar_source('R/process_haps.R')
+tar_source("R/pgp_fit.R")
+tar_source("R/pgp_pred.R")
 
-# Replace the target list below with your own:
+###########################      SOURCE TARGETS      ###########################
+targets::tar_source("inst/targets/targets_run.R")
+
+##############################      PIPELINE      ##############################
 list(
-  tar_target(
-    name = data,
-    command = tibble(x = rnorm(100), y = rnorm(100))
-    # format = "qs" # Efficient storage for general data objects.
-  ),
-  tar_target(
-    name = model,
-    command = coefficients(lm(y ~ x, data = data))
-  )
+  target_run
 )

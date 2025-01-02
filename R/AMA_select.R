@@ -12,9 +12,8 @@
 ################################################################################
 
 AMA_select <- function(data.dir,results.dir,allyears,chemlist){
-    if(data.dir==results.dir){
-    stop("input and output directories cannot be the same, or function will overwrite input.")
-    }
+
+filelist=list()
 for(i in 1:length(allyears)){
     # load year of AMA data
     print(allyears[i])
@@ -22,7 +21,13 @@ for(i in 1:length(allyears)){
     
     # remove select data and rename select fields
     AMA = AMA %>% dplyr::filter(AQS_PARAMETER_NAME %in% chemlist)
+
+    fname=paste0(results.dir,'AMA_select_',allyears[i],'.Rda')
  
- save(AMA, file=paste0(results.dir,'AMA_',allyears[i],'.Rda'))
+ save(AMA, file=fname)
  
-}}
+ filelist[[i]]=fname
+
+}
+return(filelist)
+}

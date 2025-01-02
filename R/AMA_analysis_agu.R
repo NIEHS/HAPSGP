@@ -1,5 +1,6 @@
 # AMA_analysis_agu.R
 # Analysis of HAPS subset for AGU
+# nolint start
 library(plyr)
 library(dplyr)
 library(data.table)
@@ -54,3 +55,4 @@ haps_df=process_haps(
 save(haps_df,file="output/AGU/haps_df.Rda")
 
 #load(paste0(results.dir,"AMA2021_daily_2021.Rda"))
+# nolint end
