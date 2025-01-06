@@ -26,7 +26,8 @@ for(i in 1:length(allyears)){
  
  save(AMA, file=fname)
  
- filelist[[i]]=fname
+ #filelist[[i]]=fname
+ filelist[[i]]=AMA
 
 }
 return(filelist)

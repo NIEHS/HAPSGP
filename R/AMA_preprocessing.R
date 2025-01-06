@@ -14,7 +14,7 @@
 ##          LC = Local Conditions 
 ##          STD = standard conditions
 ################################################################################
-AMA_preprocessing <- function(filelist_ama,filelist_lcstd,file_lcstdsite,results.dir,amayr,allyears){
+AMA_preprocessing <- function(filelist_ama,filelist_lcstd,AMA_RatioSite,results.dir,amayr,allyears){
   
   ##### PART 1: INITIALIZE AQS PARAMETER LISTS #####
   
@@ -48,8 +48,8 @@ AMA_preprocessing <- function(filelist_ama,filelist_lcstd,file_lcstdsite,results
     # load year of AMA data
     print(allyears[i])
     #load(paste(data.dir,'AMA_',allyears[i],'.Rda',sep=''))
-    load(filelist_ama[[i]])
-    
+    #load(filelist_ama[[i]])
+    AMA=filelist_ama[[i]]
     # remove select data and rename select fields
     AMA_sub = data.table(AMA) %>%
       mutate(HOUR=substr(SAMPLE_START_TIME,1,2)) %>% # create field with the hourly start times
@@ -80,8 +80,9 @@ AMA_preprocessing <- function(filelist_ama,filelist_lcstd,file_lcstdsite,results
     # load LC/STD ratio data
     #load(paste(results.dir,'AMA',amayr,'_LCSTDRatio_',allyears[i],'.Rda',sep='')) # load sites with LC/STD ratio for this year
     #load(paste(results.dir,'AMA',amayr,'_LCSTDRatio_Site','.Rda',sep='')) # load sites with LC/STD ratio across all years
-    load(filelist_lcstd[[i]])# load sites with LC/STD ratio for this year
-    load(file_lcstdsite)# load sites with LC/STD ratio across all years
+    #load(filelist_lcstd[[i]])# load sites with LC/STD ratio for this year
+    list2env(filelist_lcstd[[i]], envir = .GlobalEnv) # load sites with LC/STD ratio for this year
+    #load(file_lcstdsite)# load sites with LC/STD ratio across all years
     # derive local concentrations from LC/STD ratios
     AMA = AMA_sub %>% 
       join(AMA_RatioPollPOCDayDur) %>% # join by pollutant/POC/day/sampling duration LC/STD ratios 
@@ -117,7 +118,9 @@ AMA_preprocessing <- function(filelist_ama,filelist_lcstd,file_lcstdsite,results
     fname=paste(results.dir,'AMA',amayr,'_preprocessing_',allyears[i],'.Rda',sep='')
     # save file
     save(AMA,AMA_TYPECOUNT,file=fname)
-    filelist[[i]]=fname
+    #filelist[[i]]=fname
+    filelist[[i]]=AMA
+
   } # looping through each AMA year 
   return(filelist)
 }

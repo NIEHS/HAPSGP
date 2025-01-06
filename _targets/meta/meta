@@ -1,24 +1,24 @@
 name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
-.Random.seed|object|0a2d4ecfd1c58aac|||||||||||||||
+.Random.seed|object|178d3076d97a943b|||||||||||||||
 allyears|stem|bf45a0107229e7c8|c64a5795a7e416b9|2c530c1562a7fbd1|1167932188||t20090.8166045058s|da7f33a0f827466a|104|rds|local|vector|||0||
-AMA_duration2daily|function|d71cb25e2cd34c35|||||||||||||||
-AMA_LC2STDRatio|function|02e1b150e5a829c9|||||||||||||||
-AMA_LC2STDRatio_Site|function|be91a2a51edc6b4e|||||||||||||||
-AMA_preprocessing|function|2414016207bbc513|||||||||||||||
-AMA_select|function|6685a7fe692bb6a4|||||||||||||||
+AMA_duration2daily|function|ddbed23abb3b5246|||||||||||||||
+AMA_LC2STDRatio|function|12b3d64b3de3c359|||||||||||||||
+AMA_LC2STDRatio_Site|function|1086c3ce9df911a8|||||||||||||||
+AMA_preprocessing|function|1137cf5dc6994933|||||||||||||||
+AMA_select|function|c27a895d4d4eba5a|||||||||||||||
 amayr|stem|6dd92a2e9eef83b2|9a35404e8f44ad8f|2c530c1562a7fbd1|-138053768||t20090.8166046348s|d0ec9a5a63f98b43|53|rds|local|vector|||0||
-chemlist|stem|095816f37e875877|decd4988bdb4055f|2c530c1562a7fbd1|-2123374555||t20090.8452012846s|04fcf8b2530d31e5|77|rds|local|vector|||0.014||
-dailyavg|stem|dbf681edf0609334|c122eeb3aee4b387|f7ad83ceb9e4d046|820369379||t20090.8443674961s|b3893c47d2f8b380|144|rds|local|vector|||54.957|There was 1 warning in mutate.ℹ In argument PULL_DATE  as.numericstr_subas.characterDATA_SOURCE,  8.Caused by warning NAs introduced by coercion. There were 128 warnings in mutate.The first warning wasℹ In argument MIN_PULLDATE  minPULL_DATE, na.rm  T.ℹ In group 17441 SAMPLE_DATE  06052019, AQS_PARAMETER_CODE  43231,  AMA_SITE_CODE  550899001, AQS_POC  1, QUARTER  2, YEAR  2019,  DURATION_DESC  3 HOURS, PROGRAM  WISCONSIN ENHANCED PAMS,  STATE_ABBR  WI, SAMPLING_FREQUENCY_MODE  1, AQS_PARAMETER_NAME   Hexane.Caused by warning in min no nonmissing arguments to min returning Infℹ Run dplyrlast_dplyr_warnings to see the 127 remaining warnings.|
+chemlist|stem|4c98aa970e74d53e|e9e788d12f0cccae|2c530c1562a7fbd1|-2123374555||t20094.6776376631s|e7b83425a991cb39|73|rds|local|vector|||0.007||
+dailyavg|stem|30ad2f16308b5649|c122eeb3aee4b387|96f038c5658c9c30|820369379||t20094.6798257294s|8d083c5f39a80c6e|1959554|rds|local|vector|||35.647|There was 1 warning in mutate.ℹ In argument PULL_DATE  as.numericstr_subas.characterDATA_SOURCE,  8.Caused by warning NAs introduced by coercion. There were 64 warnings in mutate.The first warning wasℹ In argument MIN_PULLDATE  minPULL_DATE, na.rm  T.ℹ In group 15442 SAMPLE_DATE  06052019, AQS_PARAMETER_CODE  45201,  AMA_SITE_CODE  550899001, AQS_POC  1, QUARTER  2, YEAR  2019,  DURATION_DESC  3 HOURS, PROGRAM  WISCONSIN ENHANCED PAMS,  STATE_ABBR  WI, SAMPLING_FREQUENCY_MODE  1, AQS_PARAMETER_NAME   Benzene.Caused by warning in min no nonmissing arguments to min returning Infℹ Run dplyrlast_dplyr_warnings to see the 63 remaining warnings.|
 data.dir|stem|36917b3fbcdecb65|e403c20ddfc473c1|2c530c1562a7fbd1|1521844874||t20090.8184665188s|ba51273727d9db07|90|rds|local|vector|||0.007||
-LC2STD|stem|5e8f4ecff217452d|a5928e5b50d205aa|fba54c89bda63a29|1028655910||t20090.8215969694s|b6a3947d99208431|149|rds|local|vector|||17.054||
-LC2STD_site|stem|44d71016e2220f83|799dc0502d0efec5|c71f526d77d50124|-430162320||t20090.8296722502s|b2629a245b827e2b|131|rds|local|vector|||0.129||
+LC2STD|stem|1474966cf18ac668|a5928e5b50d205aa|366a60e4c4fc9c6b|1028655910||t20094.6789151578s|ed4d376f11aeb72a|1902282|rds|local|vector|||6.278||
+LC2STD_site|stem|2c97619a3b9ddf6f|799dc0502d0efec5|a36076210757bd1e|-430162320||t20094.6789154638s|eb45ae4707e5b45c|25834|rds|local|vector|||0.018||
 model_dates|stem|061aae3edf710829|c64ac600c5d306dd|2c530c1562a7fbd1|-920738811||t20090.8166045564s|0f5cc5be67b9db73|64|rds|local|vector|||0||
 pgp_fit|function|84152aab9d830efe|||||||||||||||
 pgp_pred|function|69010cab63641ab9|||||||||||||||
 pred_dates|stem|061aae3edf710829|c64ac600c5d306dd|2c530c1562a7fbd1|-2018407542||t20090.8166045973s|0f5cc5be67b9db73|64|rds|local|vector|||0||
-preprocess|stem|8f928990f3cbef74|8109aec11534790d|c60d03fbc61414aa|-1181991130||t20090.8317580171s|f4925d1f4bd18266|151|rds|local|vector|||59.553||
+preprocess|stem|f7ac745971992da5|69c40b5ba40bdb10|37a67bbfb7752fa5|-1181991130||t20094.6794058992s|4f54a4eb20f1a4cc|25484202|rds|local|vector|||28.216||
 process_haps|function|62c1ad73f4b87062|||||||||||||||
 results.dir|stem|38d603312173d955|928443e64290cfd5|2c530c1562a7fbd1|1950334403||t20090.8191177362s|da7f33a0f827466a|104|rds|local|vector|||0.009||
-select|stem|0c1a6c1a30d8284b|d40609f9c06ddde7|fda4d698cec4bc94|1764878598||t20090.8463542725s|0f26fa93438a7837|141|rds|local|vector|||99.593||
-target_run|object|96a08b698f13cc8d|||||||||||||||
+select|stem|9a89079e64d0f1d7|d40609f9c06ddde7|00617865a3a184f2|1764878598||t20094.6788393003s|f5e65ecea537b7f3|16267712|rds|local|vector|||91.961||
+target_run|object|20d436921b5b6fef|||||||||||||||
 vars|stem|872eee53cd6ec3f3|85f35e59f881ecd3|2c530c1562a7fbd1|-177521547||t20090.8166046732s|e435a6b9e7e6ea9f|179|rds|local|vector|||0||

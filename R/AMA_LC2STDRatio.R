@@ -53,7 +53,8 @@ AMA_LC2STDRatio <- function(filelist,results.dir,amayr,allyears){
     # load year of AMA data
     #load(paste(data.dir,'AMA_select_',allyears[i],'.Rda',sep=''))
     #load(paste(data.dir,'AMA_select_',allyears[i],'.Rda',sep=''))
-    load(filelist[[i]])
+    #load(filelist[[i]])
+    AMA=filelist[[i]]
     # subsetting data
     AMA_sub = data.table(AMA) %>%
       mutate(AQS_PARAMETER_CODE = AQS_PARAMETER_CODE_FINAL,
@@ -105,7 +106,16 @@ AMA_LC2STDRatio <- function(filelist,results.dir,amayr,allyears){
     save(AMA_STDmiss,AMA_RatioPollPOCDayDur,AMA_RatioSiteDay,AMA_RatioSiteQuart,AMA_RatioSiteYr,
          file=fname)
     
-    filelist2[[i]]=fname
+    LC2STD_list= list(
+    AMA_STDmiss = AMA_STDmiss,
+    AMA_RatioPollPOCDayDur = AMA_RatioPollPOCDayDur,
+    AMA_RatioSiteDay = AMA_RatioSiteDay,
+    AMA_RatioSiteQuart = AMA_RatioSiteQuart,
+    AMA_RatioSiteYr = AMA_RatioSiteYr)
+
+    filelist2[[i]]=LC2STD_list
+    #filelist2[[i]]=fname
+
   } # looping through each AMA year 
   return(filelist2)
 } # End function
@@ -118,8 +128,8 @@ AMA_LC2STDRatio_Site=function(filelist,results.dir,amayr,allyears){
   # looping through each year
   for(i in 1:length(filelist)){
    # print(allyears[i])
-    load(filelist[[i]]) # load year of data
-    AMA_RatioAll[[i]] = AMA_RatioSiteYr # adding to the list
+    ylist=filelist[[i]] # load year of data
+    AMA_RatioAll[[i]] = ylist$AMA_RatioSiteYr # adding to the list
   }
   AMA_RatioAll = do.call('rbind', AMA_RatioAll) # unlisting all ratio data into one dataframe
   
@@ -129,6 +139,8 @@ AMA_LC2STDRatio_Site=function(filelist,results.dir,amayr,allyears){
   fname=paste(results.dir,'AMA',amayr,'_LCSTDRatio_Site','.Rda',sep='')
   # save file
   save(AMA_RatioSite,file=fname)
-  return(fname)
+  
+  return(AMA_RatioSite)
+  #return(fname)
 }
 #nolint end

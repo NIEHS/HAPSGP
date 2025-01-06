@@ -42,7 +42,7 @@ target_run <-
     ,
     targets::tar_target(
       chemlist,
-      command = c("Benzene","Hexane","Chloroform"),
+      command = c("Benzene","Chloroform"),
       description = "Chemical list"
     )
     ,
@@ -78,7 +78,7 @@ target_run <-
      ,
     targets::tar_target(
       preprocess,
-      command = AMA_preprocessing(filelist_ama=select,filelist_lcstd=LC2STD,file_lcstdsite=LC2STD_site,results.dir=results.dir,amayr=amayr,allyears=allyears),
+      command = AMA_preprocessing(filelist_ama=select,filelist_lcstd=LC2STD,AMA_RatioSite=LC2STD_site,results.dir=results.dir,amayr=amayr,allyears=allyears),
       description="Preprocessing"
      )
      ,

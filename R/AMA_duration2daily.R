@@ -39,7 +39,8 @@ AMA_duration2daily <- function(filelist,data.dir,results.dir,amayr,allyears){
     # load pre-processed AMA data
     print(allyears[i])
     #load(paste0(results.dir,'AMA',amayr,'_preprocessing_',allyears[i],'.Rda'))
-    load(filelist[[i]])
+    #load(filelist[[i]])
+    AMA=filelist[[i]]
 
     AMA = AMA %>%  mutate(ALTERNATE_MDL = as.numeric(ALTERNATE_MDL)) #Patch for ALT_MDL
     
@@ -178,7 +179,15 @@ AMA_duration2daily <- function(filelist,data.dir,results.dir,amayr,allyears){
     # save file
     fname=paste0(results.dir,'AMA',amayr,'_daily_',allyears[i],'.Rda')
     save(daily,AMA_POCCOUNT,daily_REMOTE,AMA_POCCOUNT_REMOTE,file=fname)
-    filelist2[[i]]=fname
+
+    variable_list <- list(
+    daily = daily,
+    AMA_POCCOUNT = AMA_POCCOUNT,
+    daily_REMOTE = daily_REMOTE,
+    AMA_POCCOUNT_REMOTE = AMA_POCCOUNT_REMOTE)
+
+    #filelist2[[i]]=fname
+    filelist2[[i]]=variable_list
   } # looping through each AMA year
   return(filelist2)
 }
