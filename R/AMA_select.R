@@ -10,8 +10,8 @@
 ## NOTE: The output files for this function have the same name as the input, so 
 ##       input and output directories must be different to avoid overwriting
 ################################################################################
-
-AMA_select <- function(data.dir,results.dir,allyears,chemlist){
+# nolint start
+AMA_select <- function(data.dir,allyears,chemlist){
 
 filelist=list()
 for(i in 1:length(allyears)){
@@ -22,9 +22,9 @@ for(i in 1:length(allyears)){
     # remove select data and rename select fields
     AMA = AMA %>% dplyr::filter(AQS_PARAMETER_NAME %in% chemlist)
 
-    fname=paste0(results.dir,'AMA_select_',allyears[i],'.Rda')
+ #   fname=paste0(results.dir,'AMA_select_',allyears[i],'.Rda')
  
- save(AMA, file=fname)
+ #save(AMA, file=fname)
  
  #filelist[[i]]=fname
  filelist[[i]]=AMA
@@ -32,3 +32,4 @@ for(i in 1:length(allyears)){
 }
 return(filelist)
 }
+#nolint end

@@ -13,4 +13,6 @@ docs
 #R/AMA_analysis*
 *.out
 *.error
+*.err
 *.sh
+*.sif

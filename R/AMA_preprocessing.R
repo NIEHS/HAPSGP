@@ -14,8 +14,9 @@
 ##          LC = Local Conditions 
 ##          STD = standard conditions
 ################################################################################
-AMA_preprocessing <- function(filelist_ama,filelist_lcstd,AMA_RatioSite,results.dir,amayr,allyears){
-  
+AMA_preprocessing <- function(filelist_ama,filelist_lcstd,AMA_RatioSite){
+#AMA_preprocessing <- function(filelist_ama,filelist_lcstd,AMA_RatioSite,results.dir,amayr,allyears){
+    
   ##### PART 1: INITIALIZE AQS PARAMETER LISTS #####
   
   AQS_4CLBD = '17902' # Dibenzo[b,e][1,4]dioxin,2,3,7,8-tetrachloro (TSP) STP
@@ -46,7 +47,7 @@ AMA_preprocessing <- function(filelist_ama,filelist_lcstd,AMA_RatioSite,results.
   for(i in 1:length(filelist_ama)){
     
     # load year of AMA data
-    print(allyears[i])
+   # print(allyears[i])
     #load(paste(data.dir,'AMA_',allyears[i],'.Rda',sep=''))
     #load(filelist_ama[[i]])
     AMA=filelist_ama[[i]]
@@ -115,9 +116,9 @@ AMA_preprocessing <- function(filelist_ama,filelist_lcstd,AMA_RatioSite,results.
     typenms_fill = typenms[!(typenms %in% names(AMA_TYPECOUNT))] # the fields that are missing
     AMA_TYPECOUNT[,typenms_fill] = 0
     
-    fname=paste(results.dir,'AMA',amayr,'_preprocessing_',allyears[i],'.Rda',sep='')
+   # fname=paste(results.dir,'AMA',amayr,'_preprocessing_',allyears[i],'.Rda',sep='')
     # save file
-    save(AMA,AMA_TYPECOUNT,file=fname)
+   # save(AMA,AMA_TYPECOUNT,file=fname)
     #filelist[[i]]=fname
     filelist[[i]]=AMA
 

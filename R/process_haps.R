@@ -1,8 +1,8 @@
 #' Process HAPS data
 #' @description
 #' The \code{process_haps()} function imports and cleans HAPs data
-#' @param path character giving data path
-#' @param year numeric giving the year of HAPs data used
+#' @param data dataframe to be processed
+#' @param date vector of dates to select
 #' @param sites_file character(1) path to metadata file for sites' datum and lat-lon
 #' @param mode character(1). One of "date-location" (all dates * all locations)
 #' or "available-data" (date-location pairs with available data) or
@@ -24,9 +24,10 @@
 #' @importFrom dplyr left_join
 #' @importFrom dplyr select
 #' @export
+# nolint start
 process_haps <-
   function(
-    path = NULL,
+    data = NULL,
     date = c("2018-01-01", "2021-12-31"),
     sites_file="AMA_SITE_INFORMATION.Rda",
     mode = c("date-location", "available-data", "location"),
@@ -34,63 +35,13 @@ process_haps <-
     return_format = c("terra", "sf", "data.table"),
     ...
   ) {
-    # check inputs
-    if (!is.character(path) || is.null(path)) {
-      stop("path is not a character.")
-    }
-    if (!dir.exists(path)) {
-      stop("path does not exist.")
-    }
-    if (!is.null(date)) {
-      date <- try(as.Date(date))
-      if (inherits(date, "try-error")) {
-        stop("date has invalid format(s). Please check the values.")
-      }
-      if (length(date) != 2) {
-        stop("date should be a character vector of length 2.")
-      }
-    } else {
-      stop("date should be defined.")
-    }
-
-    # open HAPs files corresponding to the years
-    date_start <- as.Date(date[1]) 
-    date_end <- as.Date(date[2])
-    date_sequence <- seq(date_start, date_end, "day")
-    date_sequence <- as.character(date_sequence)
-    year_vec=unique(format.Date(date_sequence,"%Y"))
     
-    filenames <- paste0('AMA2021_daily_',year_vec,'.Rda')
-    haps_file <-
-      list.files(path, full.names=T)[list.files(path) %in% filenames]
-    if (length(haps_file) == 0) {
-      stop("HAPs data not available for this year.")
-    }
+    year_vec=unique(format.Date(date,"%Y"))
     
-    # Load data
-    if(length(haps_file)>1){
-      # Loop to bind multiple years together if dates selected match 
-      # multiple years. Maybe there is a more efficient way to do this?
-      for(n in 1:length(haps_file)){
-      load(haps_file[n])
-      AMA=daily #dirty fix for naming differences
-      if(n==1){
-        AMA_f=AMA
-      }else{
-        AMA_f=rbind(AMA_f,AMA)
-      }
-        AMA=AMA_f
-        
-      }
-      rm(AMA_f)
-    }else{
-      # Load data
-      load(haps_file)
-      AMA=daily #dirty fix for naming differences
-    }
+    # Unlist all years into one dataframe
+    AMA = do.call('rbind', data) 
 
     # Import sites metadata file to find Datum information
-    #meta_file <- list.files(path, full.names=T)[list.files(path) %in% sites_file]
     load(sites_file)
 
     # Append latitude and longitude
@@ -103,7 +54,7 @@ process_haps <-
     # select relevant fields only 
     AMA <- AMA |>
       dplyr::as_tibble() |>
-      dplyr::filter(as.character(SAMPLE_DATE) %in% date_sequence)
+      dplyr::filter(as.character(SAMPLE_DATE) %in% date)
     
       col_sel <- c("STATE_ABBR","AMA_SITE_CODE", "MONITOR_LONGITUDE", "MONITOR_LATITUDE")
     
@@ -172,7 +123,7 @@ process_haps <-
     
     if (mode == "date-location") {
       final_sites <-
-        split(date_sequence, date_sequence) |>
+        split(date, date) |>
         lapply(function(x) {
           fs_time <- final_sites
           fs_time$time <- x
@@ -206,3 +157,4 @@ process_haps <-
     
     return(final_sites)
   }
+# nolint end

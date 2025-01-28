@@ -1,6 +1,6 @@
 #library(dplyr)
 #library(PrestoGP)
-
+# nolint start
 #setwd("/ddn/gs1/home/kassienma/HAPSGP/")
 #pred_grid=readRDS("output/AGU/gridmet_coarsegrid_2021.rds")
 
@@ -9,16 +9,13 @@
 
 #if (is.na(day)) stop("Invalid date provided!")
 
-pgp_pred=function(pred_dates,model,pred_grid){
-#Load full model results
-fullmodel=readRDS(model)
+pgp_pred=function(pred_dates,fullmodel,pred_grid,covnames,radiuses){
 
 #Extract fit data
 model_fit=fullmodel$model
+chemlist=fullmodel$chemlist
 
-#Make dates vector
-dates_vec=seq(as.Date(pred_dates[1]), as.Date(pred_dates[2]), "days")
-
+print(paste0("date= ",pred_dates))
 #Load covariates
 print("Loading Covariates...")
 #covs_df=readRDS("input/covariates/gridmet/gridmet_all_df.RDS")
@@ -27,14 +24,14 @@ print("Omitting NAs...")
 covs_df<- na.omit(covs_df)
 #covs_df<- df[!Reduce(`|`, lapply(covs_df[, cov_ind, drop = FALSE], is.na)), ]
 #706947219
-print("Filtering to one year...")
-covs_y=covs_df %>% filter(as.Date(time) %in% dates_vec)%>% mutate(time=as.numeric(time))
+print("Filtering to day...")
+covs_d=covs_df %>% filter(as.Date(time) %in% pred_dates)%>% mutate(time=as.numeric(time))
 
-covs_d=covs_y %>% filter(time == as.numeric(day)) 
+print(nrow(covs_d))
 
-chemnum=4
-loc_ind=1:3
-cov_ind=4:10
+cov_ind <- match(paste0(covnames,"_",radiuses), colnames(covs_d))
+loc_ind = c(which(colnames(covs_d)== "lon"), which(colnames(covs_d)== "lat"),which(colnames(covs_d)== "time"))
+chemnum=length(chemlist)
 
 Xm <- list()
 locsm <- list()
@@ -53,8 +50,25 @@ locsm[[i]] <- locs2
 }
 
 print("Predicting...")
-pred <- prestogp_predict(model=model.fit,X = Xm,locs = locsm)
+pred <- prestogp_predict(model=model_fit,X = Xm,locs = locsm)
+#saveRDS(pred, paste0("output/AGU/pgpagu_prediction_",day,".RDS"))
 
-saveRDS(pred, paste0("output/AGU/pgpagu_prediction_",day,".RDS"))
-return(pred)
+# extract results for reformatting
+plist=pred[[1]]
+names(plist)=chemlist
+
+# join predictions back with location data
+pred_df=locs2
+for(i in 1:chemnum){
+cnames=c(colnames(pred_df),chemlist[i])    
+pred_df=cbind(pred_df,as.data.frame(exp(plist[[i]])))
+colnames(pred_df)=cnames   
 }
+
+#Append index number to dataframe for easy rejoining later
+idx=c(1:nrow(pred_df))
+pred_df=cbind(idx,pred_df)
+
+return(pred_df)
+}
+#nolint end

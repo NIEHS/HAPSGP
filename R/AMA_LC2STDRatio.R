@@ -19,8 +19,8 @@
 ##          LC = Local Conditions 
 ##          STD = standard conditions
 ################################################################################
-AMA_LC2STDRatio <- function(filelist,results.dir,amayr,allyears){
-  
+AMA_LC2STDRatio <- function(filelist){
+#AMA_LC2STDRatio <- function(filelist,results.dir,amayr,allyears){
   ##### PART 1: INITIALIZE AQS PARAMETER LISTS #####
   
   AQS_4CLBD = '17902' # Dibenzo[b,e][1,4]dioxin,2,3,7,8-tetrachloro (TSP) STP
@@ -102,9 +102,9 @@ AMA_LC2STDRatio <- function(filelist,results.dir,amayr,allyears){
       ungroup()
     
     # save file
-    fname=paste(results.dir,'AMA',amayr,'_LCSTDRatio_',allyears[i],'.Rda',sep='')
-    save(AMA_STDmiss,AMA_RatioPollPOCDayDur,AMA_RatioSiteDay,AMA_RatioSiteQuart,AMA_RatioSiteYr,
-         file=fname)
+   # fname=paste(results.dir,'AMA',amayr,'_LCSTDRatio_',allyears[i],'.Rda',sep='')
+   # save(AMA_STDmiss,AMA_RatioPollPOCDayDur,AMA_RatioSiteDay,AMA_RatioSiteQuart,AMA_RatioSiteYr,
+   #      file=fname)
     
     LC2STD_list= list(
     AMA_STDmiss = AMA_STDmiss,
@@ -120,7 +120,8 @@ AMA_LC2STDRatio <- function(filelist,results.dir,amayr,allyears){
   return(filelist2)
 } # End function
 
-AMA_LC2STDRatio_Site=function(filelist,results.dir,amayr,allyears){
+AMA_LC2STDRatio_Site=function(filelist){
+#AMA_LC2STDRatio_Site=function(filelist,results.dir,amayr,allyears){
   ##### PART 3: COMBINE ALL THE RATIO DATA TOGETHER #####  
   # combine all the years together and get a ratio across all years per site
   
@@ -136,9 +137,9 @@ AMA_LC2STDRatio_Site=function(filelist,results.dir,amayr,allyears){
   # ratio across all years for pollutant/POC
   AMA_RatioSite = AMA_RatioAll %>% group_by(AMA_SITE_CODE) %>% mutate(LCSTDratio_Site=mean(LCSTDratio_SiteYr))
   
-  fname=paste(results.dir,'AMA',amayr,'_LCSTDRatio_Site','.Rda',sep='')
+ # fname=paste(results.dir,'AMA',amayr,'_LCSTDRatio_Site','.Rda',sep='')
   # save file
-  save(AMA_RatioSite,file=fname)
+ # save(AMA_RatioSite,file=fname)
   
   return(AMA_RatioSite)
   #return(fname)

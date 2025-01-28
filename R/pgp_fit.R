@@ -1,5 +1,5 @@
 # Run model with full dataset
-
+# nolint start
 # Run PrestoGP model on sh
 
 # PrestoGP on HAPS + GRIDMET
@@ -11,26 +11,31 @@
 
 #setwd("/ddn/gs1/home/kassienma/HAPSGP/")
 
-pgp_fit=function(data,dates){
-
-dates_vec=seq(as.Date(dates[1]), as.Date(dates[2]), "days")
+pgp_fit=function(data,dates, radiuses){
 
 # Read in HAPS
-df=readRDS(data)
+#df=readRDS(data)
+df=as.data.frame(data)
 
-# remove rows with measurement=0 (will change this later)
-df= df %>% filter(CONC_DAILY_UG_M3 != 0) %>%
-  filter(CONC_DAILY_UG_M3 < 300 )
-# remove rows with NA's in MDL (may change this later)
-mdl_ind = which(colnames(df)== "MDL_DAILY_STD_UG_M3")
-df <- df[!Reduce(`|`, lapply(df[, mdl_ind, drop = FALSE], is.na)), ]
+# change rows with measurement=0 to very small values 
+df <- df %>%
+  mutate(CONC_DAILY_STD = if_else(CONC_DAILY_STD <= 0, MDL_DAILY_STD_UG_M3 / 20, CONC_DAILY_STD)) %>%
+  filter(CONC_DAILY_STD < 300 )
+
+# Change NA's in MDL (not many occurences of this)
+df <- df %>%
+  group_by(AQS_PARAMETER_CODE) %>%
+  mutate(MDL_DAILY_STD_UG_M3 = if_else(MDL_DAILY_STD_UG_M3 <= 0,
+                                       min(CONC_DAILY_STD[CONC_DAILY_STD > 0], na.rm = TRUE) / 10,
+                                       MDL_DAILY_STD_UG_M3)) %>%
+  ungroup()
 
 # Select only one instance in case of repeat site-times with different duration_desc
 df=df %>% group_by(AQS_PARAMETER_CODE,AMA_SITE_CODE,time) %>% # group by pollutant/site/year/duration (across days)
     filter(DURATION_DESC == min(DURATION_DESC)) %>%
     ungroup() 
 
-df2=df%>% filter(time %in% dates_vec)%>%
+df2=df%>% filter(time %in% dates)%>%
   #convert days to time 
   mutate(time=as.numeric(as.Date(time)))
 
@@ -49,7 +54,7 @@ dfchem=as.data.frame(df2 %>% filter(AQS_PARAMETER_NAME == chemlist[i]))
 
 #Get indeces
 #cov_buffers=c("_0|10000") #Gonna work with just one buffer for now
-cov_buffers=c("_0")
+cov_buffers=sprintf("_%i",radiuses)
 cov_ind <- grep(cov_buffers, names(dfchem))
 loc_ind = c(which(colnames(dfchem)== "lon"), which(colnames(dfchem)== "lat"),which(colnames(dfchem)== "time"))
 
@@ -79,9 +84,11 @@ print("Model fit done. Saving results...")
 
 # Add output to lists
 results=list()
-results$dates_vec=dates_vec
+results$dates_vec=dates
 results$model=all.mvm2
+results$chemlist=chemlist
 
-saveRDS(results, paste0("output/AGU/pgpagu_fulldata_",dates[1],"_",dates[2],".RDS"))
+#saveRDS(results, paste0("output/AGU/pgpagu_fulldata_",dates[1],"_",dates[length(dates)],".RDS"))
 return(results)
 }
+#nolint end
