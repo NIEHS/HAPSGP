@@ -14,6 +14,14 @@ library(stringr)
 library(amadeus)
 library(PrestoGP)
 library(crew)
+library(qs2)
+library(beethoven)
+library(rsample)
+library(spatialsample)
+library(sf)
+library(Metrics)
+library(tigris)
+
 # library(tarchetypes) # Load other packages as needed.
 
 ################################################################################
@@ -31,13 +39,14 @@ default_controller <- crew::crew_controller_local(
 # Set target options:
 tar_option_set(
   packages = c("tibble","targets","plyr","dplyr","data.table","tidyr","openxlsx",
-  "stringr","amadeus","PrestoGP","crew"),
+  "stringr","amadeus","PrestoGP","crew","qs2","beethoven","rsample","spatialsample",
+  "sf","Metrics","tigris"),
   #format = "qs",
   controller = crew_controller_group(default_controller),
   resources = tar_resources(
     crew = tar_resources_crew(
       controller = "default_controller"
-    )
+   )
   ),
   garbage_collection = 100,
   storage = "worker",
@@ -55,11 +64,31 @@ tar_source('R/process_haps.R')
 tar_source('R/gridmet_process.R')
 tar_source("R/pgp_fit.R")
 tar_source("R/pgp_pred.R")
+tar_source("R/pred_test.R")
+tar_source("R/pgp_cv.R")
+tar_source("R/join_covariates.R")
+tar_source("R/select_states.R")
+tar_source("R/reduce_calc_pca.R")
+tar_source("R/make_grid_state.R")
 
 ###########################      SOURCE TARGETS      ###########################
-targets::tar_source("inst/targets/targets_run.R")
+targets::tar_source("inst/targets/targets_critical.R")
+targets::tar_source("inst/targets/targets_initiate.R")
+targets::tar_source("inst/targets/targets_haps.R")
+targets::tar_source("inst/targets/targets_covariates.R")
+targets::tar_source("inst/targets/targets_covariates_NC.R")
+targets::tar_source("inst/targets/targets_covjoin.R")
+targets::tar_source("inst/targets/targets_predgrid.R")
+targets::tar_source("inst/targets/targets_fit.R")
 
 ##############################      PIPELINE      ##############################
 list(
-  target_run
+  target_critical,
+  target_initiate,
+  target_haps,
+  target_covariates,
+  #target_covariates_nc,
+  target_covjoin,
+  target_predgrid#,
+ # target_fit
 )

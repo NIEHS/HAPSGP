@@ -32,14 +32,21 @@ From: rocker/geospatial:latest
     # Create directories
     mkdir /inst
     mkdir /input
+    mkdir /output
     mkdir /opt/_targets
+    mkdir /set_input
+    mkdir /set_targets
+    mkdir /beethoven
 
     # Install R packages
-    Rscript -e "install.packages(c('pak', 'targets', 'tarchetypes', 'crew', \
-        'crew.cluster', 'testthat', 'tidymodels', 'bonsai', 'qs2', 'mirai', \
-        'nanonext', 'plyr','dplyr','data.table','openxlsx','stringr'))"
+    Rscript -e "install.packages(c('pak'))"
+    Rscript -e "pak::pak('NIEHS/beethoven')"
     Rscript -e "pak::pak('NIEHS/amadeus')"
     Rscript -e "devtools::install_github('NIEHS/PrestoGP')"
+    Rscript -e "install.packages(c('targets', 'tarchetypes', 'crew', \
+        'crew.cluster', 'testthat', 'tidymodels', 'bonsai', 'qs2', 'mirai', \
+        'nanonext', 'plyr','dplyr','data.table','openxlsx','stringr','rsample','spatialsample','sf','Metrics','tigris'))"
+
 
 %environment
     # Set locale for the container environment

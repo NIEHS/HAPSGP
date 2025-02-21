@@ -11,7 +11,7 @@
 
 #setwd("/ddn/gs1/home/kassienma/HAPSGP/")
 
-pgp_fit=function(data,dates, radiuses){
+pgp_fit=function(data,dates, vars){
 
 # Read in HAPS
 #df=readRDS(data)
@@ -52,10 +52,10 @@ chemlist=sort(unique(df2$AQS_PARAMETER_NAME))
 for(i in 1:length(chemlist)){
 dfchem=as.data.frame(df2 %>% filter(AQS_PARAMETER_NAME == chemlist[i]))
 
-#Get indeces
+#Get covariate indeces
 #cov_buffers=c("_0|10000") #Gonna work with just one buffer for now
-cov_buffers=sprintf("_%i",radiuses)
-cov_ind <- grep(cov_buffers, names(dfchem))
+noncov_names=c(vars,"time","lon","lat","year")
+cov_ind <- which(!names(dfchem) %in% noncov_names)
 loc_ind = c(which(colnames(dfchem)== "lon"), which(colnames(dfchem)== "lat"),which(colnames(dfchem)== "time"))
 
 # remove rows with NA's in covariates
@@ -78,7 +78,7 @@ lodsm[[i]] <- lods3
 
 # Multivariate Vecchia model
 all.mvm <-  new("MultivariateVecchiaModel", n_neighbors = 10)
-all.mvm2 <- prestogp_fit(all.mvm, ym, Xm, locsm, lod=lodsm, scaling = c(1, 1, 2),impute.y=TRUE, verbose=TRUE)
+all.mvm2 <- prestogp_fit(all.mvm, ym, Xm, locsm, lod=lodsm, scaling = c(1, 1, 2),impute.y=TRUE, verbose=TRUE,relax=TRUE)
 
 print("Model fit done. Saving results...")
 

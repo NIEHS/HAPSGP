@@ -9,8 +9,8 @@
 
 #if (is.na(day)) stop("Invalid date provided!")
 
-pgp_pred=function(pred_dates,fullmodel,pred_grid,covnames,radiuses){
-
+pgp_pred=function(pred_dates,fullmodel2,pred_grid,vars){
+fullmodel=readRDS(fullmodel2)
 #Extract fit data
 model_fit=fullmodel$model
 chemlist=fullmodel$chemlist
@@ -19,18 +19,21 @@ print(paste0("date= ",pred_dates))
 #Load covariates
 print("Loading Covariates...")
 #covs_df=readRDS("input/covariates/gridmet/gridmet_all_df.RDS")
-covs_df=readRDS(pred_grid)
+#covs_df=readRDS(pred_grid)
+covs_df=as.data.frame(pred_grid)
 print("Omitting NAs...")
 covs_df<- na.omit(covs_df)
 #covs_df<- df[!Reduce(`|`, lapply(covs_df[, cov_ind, drop = FALSE], is.na)), ]
 #706947219
 print("Filtering to day...")
-covs_d=covs_df %>% filter(as.Date(time) %in% pred_dates)%>% mutate(time=as.numeric(time))
+covs_d=covs_df %>% dplyr::filter(as.Date(time) %in% pred_dates)%>% dplyr::mutate(time=as.numeric(as.Date(time)))
 
 print(nrow(covs_d))
 
-cov_ind <- match(paste0(covnames,"_",radiuses), colnames(covs_d))
+noncov_names=c(vars,"time","lon","lat","year","grid_id")
+cov_ind <- which(!names(covs_d) %in% noncov_names)
 loc_ind = c(which(colnames(covs_d)== "lon"), which(colnames(covs_d)== "lat"),which(colnames(covs_d)== "time"))
+
 chemnum=length(chemlist)
 
 Xm <- list()
@@ -40,12 +43,24 @@ print("Formatting prediction set...")
 # Make prediction matrix
 #X=as.matrix(covs_y[,cov_ind])
 #locs2=as.matrix(covs_y[,loc_ind])
-
+for(i in 1:chemnum){
 X=as.matrix(covs_d[,cov_ind])
+colnames(X)=paste0(colnames(X), chemlist[i])
+
+colnames(X) <- gsub("TRI_PC0", "TRI_PC", colnames(X))
+column_match=which(colnames(X) %in% colnames(model_fit@X_train))
+X_filter=X[,column_match]
+
+matched_indices <- (match(colnames(model_fit@X_train), colnames(X_filter)))
+matched_indices <-matched_indices[!is.na(matched_indices)]
+
+X_filter <- X_filter[, matched_indices]
+
+
 locs2=as.matrix(covs_d[,loc_ind])
 
-for(i in 1:chemnum){
-Xm[[i]] <- X
+#for(i in 1:chemnum){
+Xm[[i]] <- X_filter
 locsm[[i]] <- locs2
 }
 
