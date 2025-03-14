@@ -87,8 +87,8 @@ list(
   target_initiate,
   target_haps,
   target_covariates,
-  #target_covariates_nc,
+  target_covariates_nc,
   target_covjoin,
-  target_predgrid#,
- # target_fit
+  target_predgrid,
+  target_fit
 )

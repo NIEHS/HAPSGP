@@ -51,10 +51,34 @@ pred=pgp_crossvalidation_nc$pred.list
 i=2
 model.nrmse=list()
 for(i in 1:5){
-model.nrmse[i]=rmse(exp(unlist(ytest[[i]])),exp(unlist(pred[[i]])))/mean(exp(unlist(pred[[i]])))
+model.nrmse[i]=rmse(exp(unlist(ytest[[i]])),exp(unlist(pred[[i]])))/mean(exp(unlist(ytest[[i]])))
 }
 
-i=1
+nrmse1=list()
+nrmse2=list()
+for(i in 1:5){
 # Plot pred vs ytest
-plot(exp(unlist(ytest[[i]])),exp(unlist(pred[[i]])))
+ytest_f=ytest[[i]]
+pred_f=pred[[i]]
+
+metric_df=data.frame(ytest=ytest_f[[1]],pred=pred_f[1:length(ytest_f[[1]])])
+nrmse1[i]=rmse(exp(metric_df$ytest),exp(metric_df$pred))/mean(exp(metric_df$ytest))
+
+metric_df2=data.frame(ytest=ytest_f[[2]],pred=pred_f[(length(ytest_f[[1]])+1):(length(ytest_f[[1]])+length(ytest_f[[2]]))])
+nrmse2[i]=rmse(exp(metric_df2$ytest),exp(metric_df2$pred))/mean(exp(metric_df2$ytest))
+}#
+
+
+plot(ytest_f[[1]],pred_f[1:length(ytest_f[[1]])], main=paste("Benzene CV fold",i))
+abline(c(0,1),col="red")
+plot(ytest_f[[2]],pred_f[(length(ytest_f[[1]])+1):(length(ytest_f[[1]])+length(ytest_f[[2]]))],
+main=paste("Benzene CV fold",i))
+abline(c(0,1),col="red")
+}
+
+length(unlist(ytest_f))
+length(unlist(pred_f))
+plot(exp(unlist(ytest_f)),exp(pred_f))
+
+plot(exp(unlist(ytest[[i]])),exp(pred[[i]]))
 abline(c(0,1), col="red")

@@ -60,7 +60,7 @@ windfreq <- function(mydata, ws_col, wd_col, ws.int, wd.int, calm.thres = 0,
   ws_labels <- paste0("[", head(ws_bins, -1), "-", tail(ws_bins, -1), ")")
   
   # 2. Define wind direction bins based on wd.int
-  
+
   # Ensure wd.int is a divisor of 360
   if (360 %% wd.int != 0) {
     original_wd_int <- wd.int
@@ -73,11 +73,23 @@ windfreq <- function(mydata, ws_col, wd_col, ws.int, wd.int, calm.thres = 0,
     message("Warning: wd.int = ", original_wd_int, 
             " is not a divisor of 360. Adjusting to wd.int = ", wd.int, " for even binning.")
   }
-  
-  # Define wind direction bin edges and labels
-  wd_bins <- seq(0, 360, length.out = wd.int + 1)
+
+  # Calculate the bin width
+  wd_bin_width <- 360 / wd.int
+
+  # Shift bins to center on cardinal directions (N, E, S, W)
+  # Example: For 4 bins, we want centers at 0, 90, 180, 270
+  wd_centers <- seq(0, 360 - wd_bin_width, length.out = wd.int)
+
+  # Shift the bin edges to center on these points
+  # Each bin spans half the bin width on either side of the center
+  wd_bins <- (wd_centers - wd_bin_width / 2) %% 360
+
+  # Ensure the bins wrap correctly
+  wd_bins <- sort(c(wd_bins, 360))
+
+  # Create wind direction labels with interval notation
   wd_labels <- paste0("[", head(wd_bins, -1), "-", tail(wd_bins, -1), ")")
-  
   # 3. Bin the wind speed and wind direction
   mydata$ws_binned <- cut(ws,
                           breaks = ws_bins, 
@@ -105,4 +117,15 @@ windfreq <- function(mydata, ws_col, wd_col, ws.int, wd.int, calm.thres = 0,
   
   return(freq_table)
 }
+
+# Auxiliary function: extract intervals from wind labels
+extract_intervals <- function(bin_labels) {
+  # Extract numeric values from labels like "[315-45)"
+  bins <- gsub("[^0-9.\\-]", "", bin_labels) # Remove non-numeric characters
+  bins <- strsplit(bins, "-") # Split at the "-"
+  bins <- lapply(bins, as.numeric) # Convert to numeric
+  bins <- do.call(rbind, bins) # Create matrix of start and end
+  return(bins)
+}
+
 # nolint end
