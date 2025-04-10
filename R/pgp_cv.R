@@ -128,7 +128,7 @@ locstest[[i]] <- locst
 print("Fitting model on training set...")
 # Multivariate Vecchia model
 all.mvm <-  new("MultivariateVecchiaModel", n_neighbors = 10)
-all.mvm2 <- prestogp_fit(all.mvm, ym, Xm, locsm, lod=lodsm, scaling = c(1, 1, 2),impute.y=TRUE, verbose=TRUE,relax=TRUE)
+all.mvm2 <- prestogp_fit(all.mvm, ym, Xm, locsm, lod=lodsm, scaling = c(1, 1, 2),impute.y=TRUE, verbose=TRUE,penalty="SCAD")
 
 print("Making prediction on testing set...")
 pred <- prestogp_predict(model=all.mvm2,X = Xtest,locs = locstest)

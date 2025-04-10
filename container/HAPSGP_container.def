@@ -44,7 +44,7 @@ From: rocker/geospatial:latest
     Rscript -e "pak::pak('NIEHS/amadeus')"
     Rscript -e "devtools::install_github('NIEHS/PrestoGP')"
     Rscript -e "install.packages(c('targets', 'tarchetypes', 'crew', \
-        'crew.cluster', 'testthat', 'tidymodels', 'bonsai', 'qs2', 'mirai', \
+        'crew.cluster', 'testthat', 'tidymodels', 'bonsai', 'kernlab', 'qs2', 'mirai', \
         'nanonext', 'plyr','dplyr','data.table','openxlsx','stringr','rsample','spatialsample','sf','Metrics','tigris'))"
 
 

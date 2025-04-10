@@ -26,15 +26,38 @@ library(tigris)
 
 ################################################################################
 #############################      CONTROLLER      #############################
-# Get the value of SLURM_CPUS_PER_TASK environment variable
-cpus_per_task <- as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", "30"))
-
-# Define the controller with dynamic workers based on cpus-per-task
-default_controller <- crew::crew_controller_local(
-  name = "default_controller",
-  workers = cpus_per_task,
-  seconds_idle = 30
+#############################      CONTROLLER      #############################
+##### `controller_250` uses full allocation of workers (~4.0 Gb per worker).
+controller_250 <- crew::crew_controller_local(
+  name = "controller_250",
+  workers = 250
 )
+##### `controller_100` uses 100 workers (~10.0 Gb per worker).
+controller_100 <- crew::crew_controller_local(
+  name = "controller_100",
+  workers = 100
+)
+##### `controller_50` uses 50 workers (~20.0 Gb per worker).
+controller_50 <- crew::crew_controller_local(
+  name = "controller_50",
+  workers = 50
+)
+##### `controller_25` uses 25 workers (~40.0 Gb per worker).
+controller_25 <- crew::crew_controller_local(
+  name = "controller_25",
+  workers = 25
+)
+##### `controller_10` uses 10 workers (~90.0 Gb per worker).
+controller_10 <- crew::crew_controller_local(
+  name = "controller_10",
+  workers = 10
+)
+##### `controller_1` uses 1 worker for sequential {lightGBM} models.
+controller_1 <- crew::crew_controller_local(
+  name = "controller_1",
+  workers = 1
+)
+
 
 # Set target options:
 tar_option_set(
@@ -42,11 +65,11 @@ tar_option_set(
   "stringr","amadeus","PrestoGP","crew","qs2","beethoven","rsample","spatialsample",
   "sf","Metrics","tigris"),
   #format = "qs",
-  controller = crew_controller_group(default_controller),
-  resources = tar_resources(
-    crew = tar_resources_crew(
-      controller = "default_controller"
-   )
+  controller = crew::crew_controller_group(
+    controller_250, controller_100, controller_50,
+    controller_25, controller_10, controller_1),
+  resources = targets::tar_resources(
+    crew = targets::tar_resources_crew(controller = "controller_250")
   ),
   garbage_collection = 100,
   storage = "worker",
@@ -70,6 +93,9 @@ tar_source("R/join_covariates.R")
 tar_source("R/select_states.R")
 tar_source("R/reduce_calc_pca.R")
 tar_source("R/make_grid_state.R")
+tar_source("R/post_calc_autojoin2.R")
+tar_source("R/impute_all2.R")
+tar_source("R/gridmet_cleanup.R")
 
 ###########################      SOURCE TARGETS      ###########################
 targets::tar_source("inst/targets/targets_critical.R")
@@ -78,7 +104,8 @@ targets::tar_source("inst/targets/targets_haps.R")
 targets::tar_source("inst/targets/targets_covariates.R")
 targets::tar_source("inst/targets/targets_covariates_NC.R")
 targets::tar_source("inst/targets/targets_covjoin.R")
-targets::tar_source("inst/targets/targets_predgrid.R")
+#targets::tar_source("inst/targets/targets_predgrid.R")
+targets::tar_source("inst/targets/targets_covariates_predgrid.R")
 targets::tar_source("inst/targets/targets_fit.R")
 
 ##############################      PIPELINE      ##############################
@@ -87,8 +114,9 @@ list(
   target_initiate,
   target_haps,
   target_covariates,
-  target_covariates_nc,
-  target_covjoin,
-  target_predgrid,
-  target_fit
+  target_covariates_predgrid#,
+ # target_covariates_nc,
+ # target_covjoin,
+ # target_predgrid,
+ # target_fit
 )

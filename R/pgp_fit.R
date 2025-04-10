@@ -78,7 +78,7 @@ lodsm[[i]] <- lods3
 
 # Multivariate Vecchia model
 all.mvm <-  new("MultivariateVecchiaModel", n_neighbors = 10)
-all.mvm2 <- prestogp_fit(all.mvm, ym, Xm, locsm, lod=lodsm, scaling = c(1, 1, 2),impute.y=TRUE, verbose=TRUE,relax=TRUE)
+all.mvm2 <- prestogp_fit(all.mvm, ym, Xm, locsm, lod=lodsm, scaling = c(1, 1, 2),impute.y=TRUE, verbose=TRUE,penalty="SCAD")
 
 print("Model fit done. Saving results...")
 

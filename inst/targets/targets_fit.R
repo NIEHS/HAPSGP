@@ -15,13 +15,13 @@ target_fit <-
    # ),
     targets::tar_target(
         name = model_fit_nc,
-       command = pgp_fit(data=covs_pctri_nc,
+       command = pgp_fit(data=covariates_nc,
                         dates=model_dates, 
                         vars=vars)
     ),
    targets::tar_target(
       name = pgp_crossvalidation_nc,
-      command = pgp_cv(data=covs_pctri_nc,
+      command = pgp_cv(data=covariates_nc,
                         dates=model_dates, 
                         vars=vars, 
                       cv_splits=5)
