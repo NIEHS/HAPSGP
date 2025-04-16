@@ -19,35 +19,9 @@ target_covariates_predgrid <-
       description="gridmet on prediction grid"
      )
     ,  
-    targets::tar_target(
-      gmet_cleanup_pred,
-      command=gridmet_cleanup(gmet_process_pred,vars),
-        description="gridmet columns cleanup"
-     ),
+
     ###########################      ECOREGIONS      ###########################
-    targets::tar_target(
-      dt_feat_calc_ecoregions_pred,
-      command = {
-        download_ecoregions
-        data.table::data.table(
-          amadeus::calculate_ecoregion(
-            from = amadeus::process_ecoregion(
-              path = file.path(
-                chr_input_dir,
-                "ecoregions",
-                "data_files",
-                "us_eco_l3_state_boundaries.shp"
-              )
-            ),
-            radius=100,
-            locs = pred_grid,
-            locs_id = "AMA_SITE_CODE"
-          )
-        )
-      },
-      description = "data.table of Ecoregions features | predict"
-    )
-    ,
+
     ###########################      TRI/SEDC      ###########################
     targets::tar_target(
       list_feat_calc_tri_pred,
@@ -244,32 +218,10 @@ target_covariates_predgrid <-
       description = "data.table of gRoads features | predict"
     ) ,
     ###########################        KOPPEN        ###########################
-    targets::tar_target(
-    dt_feat_calc_koppen_pred,
-    command = {
-      download_koppen
-      data.table::data.table(
-        amadeus::calculate_koppen_geiger(
-          from = amadeus::process_koppen_geiger(
-            path = file.path(
-              chr_input_dir,
-              "koppen_geiger",
-              "data_files",
-              "Beck_KG_V1_present_0p0083.tif"
-            )
-          ),
-          locs = pred_grid,
-          # NOTE: locs are all AQS sites for computational efficiency
-          locs_id = "AMA_SITE_CODE",
-          geom = FALSE
-        )
-      )
-    },
-    description = "data.table of Koppen Geiger features | predict"
-  ),
+   
   ###########################         NEI          ###########################
     targets::tar_target(
-    list_feat_calc_ne_pred,
+    list_feat_calc_nei_pred,
     command = {
       download_nei
       beethoven::inject_calculate(
@@ -377,36 +329,7 @@ target_covariates_predgrid <-
       description = "Calculate GEOS-CF features | aqc | predict"
     )
     ,
-    targets::tar_target(
-      list_feat_calc_geos_chm_pred,
-      command = {
-        download_geos_buffer
-        beethoven::calc_geos_strict(
-          path = file.path(chr_input_dir, "geos", chr_iter_calc_geos[2]),
-          date = beethoven::fl_dates(unlist(list_dates)),
-          locs = pred_grid,
-          locs_id = "AMA_SITE_CODE"
-        )
-      },
-      pattern = map(list_dates),
-      resources = targets::tar_resources(
-        crew = targets::tar_resources_crew(controller = "controller_100")
-      ),
-      iteration = "list",
-      description = "Calculate GEOS-CF features | chm | predict"
-    )
-    ,
-    targets::tar_target(
-      dt_feat_calc_geos_pred,
-      command = beethoven::reduce_merge(
-        c(
-          beethoven::reduce_list(list_feat_calc_geos_aqc_pred),
-          beethoven::reduce_list(list_feat_calc_geos_chm_pred)
-        ),
-        by = c("AMA_SITE_CODE", "time", "CO", "NO2", "SO2")
-      ),
-      description = "data.table of GEOS-CF features | predict"
-    ),
+
   ###########################         NARR         ###########################
     targets::tar_target(
       list_feat_calc_narr_pred,

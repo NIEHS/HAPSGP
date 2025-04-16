@@ -1,8 +1,9 @@
 # Presto GP cross-validation fit
 #nolint start
 
-pgp_cv=function(data,dates, vars, cv_splits){
+pgp_cv=function(data,dates, vars, cv_splits, cv_method="random"){
 
+set.seed(33)
 # Read in HAPS
 #df=readRDS(data)
 df=as.data.frame(data)
@@ -25,9 +26,13 @@ df=df %>% group_by(AQS_PARAMETER_CODE,AMA_SITE_CODE,time) %>% # group by polluta
     filter(DURATION_DESC == min(DURATION_DESC)) %>%
     ungroup() 
 
-df=df%>% filter(time %in% dates)%>%
-  mutate(time=as.numeric(as.Date(time)))%>%   #convert days to time 
-  mutate(idx=1:nrow(df))
+dates <- as.Date(dates)
+
+df = df %>%
+  mutate(time = as.Date(time)) %>%
+  filter(time %in% dates) %>%
+  mutate(time = as.numeric(time)) %>%
+  mutate(idx = row_number())
 
 # remove rows with NA's in covariates
 #Get covariate indeces
@@ -43,9 +48,13 @@ df <- df[!Reduce(`|`, lapply(df[, cov_ind, drop = FALSE], is.na)), ]
 df_sf = st_as_sf(df, coords=c("lon","lat"),crs="EPSG:4326")
 # Separate into cross-validation sets
 rep=cv_splits
-cvsplit <- spatial_block_cv(df_sf, v = rep, method = "snake")
-
-
+if (cv_method == "spatial") {
+  cvsplit <- spatialsample::spatial_block_cv(df_sf, v = rep, method = "snake")
+} else if (cv_method == "random") {
+  cvsplit <- rsample::vfold_cv(df, v = rep)
+} else {
+  stop("Please specify valid CV method (either 'spatial' or 'random')")
+}
 
 otr<-list()
 otst<-list()
@@ -59,6 +68,7 @@ for (r in 1:rep){
 print (paste("CV fold", r))
 
 #h=2
+cvsplit <- vfold_cv(df, v = rep)
 dftr <- spatialsample::analysis(cvsplit$splits[[r]])
 dftt <- spatialsample::assessment(cvsplit$splits[[r]])
 
@@ -131,7 +141,7 @@ all.mvm <-  new("MultivariateVecchiaModel", n_neighbors = 10)
 all.mvm2 <- prestogp_fit(all.mvm, ym, Xm, locsm, lod=lodsm, scaling = c(1, 1, 2),impute.y=TRUE, verbose=TRUE,penalty="SCAD")
 
 print("Making prediction on testing set...")
-pred <- prestogp_predict(model=all.mvm2,X = Xtest,locs = locstest)
+pred <- prestogp_predict(model=all.mvm2,X = Xtest,locs = locstest,return.values = "meanvar")
 
 model.mse=mse(exp(unlist(ytest)),exp(unlist(pred)))
 print(model.mse)

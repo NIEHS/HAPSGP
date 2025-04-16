@@ -161,7 +161,7 @@ dfchem_test=dftest %>% filter(AQS_PARAMETER_NAME == chemlist[i])
 Xt<- as.matrix(dfchem_test[,cov_ind])
 colnames(Xt)=paste0(colnames(Xt), chemlist[i])
 
-locst <- as.matrix(dfchem_test[,c(loc_ind,time_ind)])
+locst <- as.matrix(dfchem_test[,c(loc_ind2,time_ind2)])
 
 Xmtest[[i]] <- Xt
 locsmtest[[i]] <- locst
@@ -170,10 +170,10 @@ locsmtest[[i]] <- locst
 
 # Multivariate Vecchia model
 all.mvm <-  new("MultivariateVecchiaModel", n_neighbors = 10)
-all.mvm2 <- prestogp_fit(all.mvm, ym, Xm, locsm, lod=lodsm, scaling = c(1, 1, 2),impute.y=TRUE, verbose=TRUE)
+all.mvm2 <- prestogp_fit(all.mvm, ym, Xm, locsm, lod=lodsm, scaling = c(1, 1, 2),impute.y=TRUE, verbose=TRUE, penalty="relaxed")
 
-pred <- prestogp_predict(model=all.mvm2,X = Xmtest,locs = locsmtest)
-
+#pred <- prestogp_predict(model=all.mvm2,X = Xmtest,locs = locsmtest)#, return.values = "meanvar")
+pred <- prestogp_predict(model=all.mvm2,X = Xm,locs = locsm, return.values = "meanvar")
 
 library(sf)
 library(mapview)
@@ -182,3 +182,4 @@ df_locs= df %>% distinct(AMA_SITE_CODE,lon,lat)
 
 dfsf=st_as_sf(df_locs, coords=c("lon","lat"), crs="EPSG:4326")
 mapview(dfsf)
+

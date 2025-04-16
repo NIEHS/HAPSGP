@@ -14,5 +14,5 @@ docs
 *.out
 *.error
 *.err
-*.sh
+#*.sh
 *.sif

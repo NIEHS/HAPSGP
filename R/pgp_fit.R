@@ -6,12 +6,12 @@
 # devtools::install_github("NIEHS/PrestoGP")
 #library(PrestoGP)
 #library(dplyr)
-#dates=c("2021-01-01","2021-12-31")
+#dates=c("2021-01-01","2021-01-31")
 #data="output/AGU/haps_gridmet_208-2021.rds"
 
 #setwd("/ddn/gs1/home/kassienma/HAPSGP/")
 
-pgp_fit=function(data,dates, vars){
+pgp_fit=function(data, dates, vars){
 
 # Read in HAPS
 #df=readRDS(data)
@@ -35,9 +35,11 @@ df=df %>% group_by(AQS_PARAMETER_CODE,AMA_SITE_CODE,time) %>% # group by polluta
     filter(DURATION_DESC == min(DURATION_DESC)) %>%
     ungroup() 
 
-df2=df%>% filter(time %in% dates)%>%
-  #convert days to time 
-  mutate(time=as.numeric(as.Date(time)))
+dates <- as.Date(dates)
+df2 = df %>%
+  mutate(time = as.Date(time)) %>%
+  filter(time %in% dates) %>%
+  mutate(time = as.numeric(time))
 
 #Initialize lists
 ym <- list()

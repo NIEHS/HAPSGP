@@ -22,8 +22,6 @@ library(sf)
 library(Metrics)
 library(tigris)
 
-# library(tarchetypes) # Load other packages as needed.
-
 ################################################################################
 #############################      CONTROLLER      #############################
 #############################      CONTROLLER      #############################
