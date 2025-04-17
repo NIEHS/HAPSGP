@@ -5,8 +5,8 @@
 #SBATCH --cpus-per-task=100
 #SBATCH --ntasks-per-node=1
 #SBATCH --nodes=1
-#SBATCH --output=runHAPSGP0416.out
-#SBATCH --error=runHAPSGP0416.err
+#SBATCH --output=runHAPSGP0417.out
+#SBATCH --error=runHAPSGP0417.err
 #SBATCH --mail-user=mariana.kassien@nih.gov
 #SBATCH --mail-type=ALL
 

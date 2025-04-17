@@ -21,7 +21,29 @@ target_covariates_predgrid <-
     ,  
 
     ###########################      ECOREGIONS      ###########################
-
+    targets::tar_target(
+      dt_feat_calc_ecoregions_pred,
+      command = {
+        download_ecoregions
+        data.table::data.table(
+          amadeus::calculate_ecoregion(
+            from = amadeus::process_ecoregion(
+              path = file.path(
+                chr_input_dir,
+                "ecoregions",
+                "data_files",
+                "us_eco_l3_state_boundaries.shp"
+              )
+            ),
+            radius=100,
+            locs = pred_grid,
+            locs_id = "AMA_SITE_CODE"
+          )
+        )
+      },
+      description = "data.table of Ecoregions features | predict"
+    )
+    ,
     ###########################      TRI/SEDC      ###########################
     targets::tar_target(
       list_feat_calc_tri_pred,

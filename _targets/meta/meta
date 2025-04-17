@@ -1579,7 +1579,6 @@ dt_feat_calc_design|stem|e4ddcb3bc16b6e9c|4b1ac69139d22d32|5fc5b224b62beef1|7243
 dt_feat_calc_imputed|stem|4aa5dbbcd803e962|e869a9c9660a707e|80ff554e0eab0898|13410887||t20189.1089444407s|s14883254b|14883254|rds|local|vector|||1973.593||
 dt_feat_calc_xyt|stem|2098c859374333ce|eb37f30dfd48eae2|5a108dbf91ee280d|2027297879||t20189.1089859809s|s14890518b|14890518|rds|local|vector|||0.062||
 covariates_nc|stem|060a11b66e648247|c2107e5477ef04cd|82504788717ad10b|-576771365||t20189.109011073s|s8132827b|8132827|rds|local|vector|||0.022||
-model_fit_nc|stem|28f1d988ad766a3f|fb962130f6f4db50|55aa1bb201d556b0|1757765721||t20189.9198699852s|s159131135b|159131135|rds|local|vector|||9276.536|Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly specify returnXTRUE or returnXFALSE.. Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly specify returnXTRUE or returnXFALSE.. Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly specify returnXTRUE or returnXFALSE.. Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly specify returnXTRUE or returnXFALSE.. Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly specify returnXTRUE or returnXFALSE.. Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly specify returnXTRUE or returnXFALSE.|
 pgp_crossvalidation_nc|stem|c6c483e80677a97d|da417d1a62c0b84a|71326eba59de72c8|-472222169||t20190.1904608765s|s645220991b|645220991|rds|local|vector|||32627.841|Maximum number of iterations reached. Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly specify returnXTRUE or returnXFALSE.. Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly specify returnXTRUE or returnXFALSE.. Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly specify returnXTRUE or returnXFALSE.. Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly specify returnXTRUE or returnXFALSE.. Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly specify returnXTRUE or returnXFALSE.. Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly specify returnXTRUE or returnXFALSE.. Maximum number of iterations reached. Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly specify returnXTRUE or returnXFALSE.. Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly specify returnXTRUE or returnXFALSE.. Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly specify returnXTRUE or returnXFALSE.. Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly specify returnXTRUE or returnXFALSE.. Maximum number of iterations reached. Due to the large size of X 100 Mb, returnX has been turned off.To turn this message off, explicitly|
 list_feat_calc_pop_pred|pattern|ae06c6a318eeeacb|025603f72643d51d||2022952899||||0|rds|local|list||list_feat_calc_pop_pred_48919f50a754811a*list_feat_calc_pop_pred_9a750e2a0378dd1b*list_feat_calc_pop_pred_b31074b6f09e433c|0||
 list_feat_calc_tri_pred|pattern|015c7fd37ba0b8f8|4b376fa4fce9a9bd||-776397059||||0|rds|local|list||list_feat_calc_tri_pred_3623212d941957c5*list_feat_calc_tri_pred_5b6425e5c176b703|0||
@@ -1675,8 +1674,50 @@ list_feat_calc_narr_lag_pred_f81c05ce9ffe2b34|branch|c45f686ee8992c2c|95615e6f62
 list_feat_calc_geos_chm_pred_302158fd4a0c6528|branch||c9cad56bd5d81329|cd0aa63108268cd5|1253292050||t20188.8331633661s||0|rds|local|list|list_feat_calc_geos_chm_pred||73.998|extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data|This join would result in more rows than dplyr can handle.ℹ 2304127840 rows would be returned. 2147483647 rows is the maximum number  allowed.ℹ Double check your join keys. This error commonly occurs due to a missing join  key, or an improperly specified join condition.
 list_feat_calc_geos_chm_pred_d9b7c8c60702f23d|branch||c9cad56bd5d81329|cd0aa63108268cd5|98359054||t20188.8331531961s||0|rds|local|list|list_feat_calc_geos_chm_pred||76.76|extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data|This join would result in more rows than dplyr can handle.ℹ 2304127840 rows would be returned. 2147483647 rows is the maximum number  allowed.ℹ Double check your join keys. This error commonly occurs due to a missing join  key, or an improperly specified join condition.
 list_feat_calc_geos_chm_pred_320155242b4b6fa6|branch||c9cad56bd5d81329|cd0aa63108268cd5|-506403376||t20188.8331946357s||0|rds|local|list|list_feat_calc_geos_chm_pred||78.384|extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data to the CRS of the raster. extract transforming vector data|This join would result in more rows than dplyr can handle.ℹ 2304127840 rows would be returned. 2147483647 rows is the maximum number  allowed.ℹ Double check your join keys. This error commonly occurs due to a missing join  key, or an improperly specified join condition.
+target_covjoin|object|37921f1453c6a671|||||||||||||||
+list_feat_calc_narr_lag_pred|pattern|18938ce4858ce807|95615e6f62202483||1418589498||||0|rds|local|list||list_feat_calc_narr_lag_pred_d34b3e297fee4700*list_feat_calc_narr_lag_pred_08056195ab7d83ee*list_feat_calc_narr_lag_pred_d96b357bc665a724*list_feat_calc_narr_lag_pred_f81c05ce9ffe2b34*list_feat_calc_narr_lag_pred_a7e385f275008c6b*list_feat_calc_narr_lag_pred_ec8f538c810a28ec|0||
+list_feat_calc_base_flat_pred|stem||e8fa4f31541c76d9|6aaec0d766f94117|76194589||t20194.658162397s||0|rds|local|vector|||0.003||object dt_feat_calc_ecoregions_pred not found
+dt_feat_calc_narr_pred|stem|cb06d429209a43da|0ee143037c239999|10432083498eab2f|988670327||t20194.6583506957s|s52101037b|52101037|rds|local|vector|||3.093||
+pgp_fit2|function|3245638fad181309|||||||||||||||
+pgp_cleanup_nc|stem|d16caf1e42024ef0|afc3828cc40ba6a4|4e45b8cd3baca46a|924762751||t20195.8501697687s|s7998188b|7998188|rds|local|vector|||1.506||
+pgp_pred|function|e91b31378d351f4a|||||||||||||||
+pgp_preprocessing|function|ffbd21c50785804c|||||||||||||||
+.Random.seed|object|92793c18e4668124|||||||||||||||
+pred_test|function|edbe73ca82e8a852|||||||||||||||
+controller_25|object|40ef6fd08a570411|||||||||||||||
+AMA_LC2STDRatio|function|8427fb1b752e54e7|||||||||||||||
+impute_all2|function|450414916040978a|||||||||||||||
+AMA_duration2daily|function|6d8b02446d02aa45|||||||||||||||
+reduce_pca|function|be465792e15e7ec1|||||||||||||||
+controller_1|object|a60daa361b3030c5|||||||||||||||
+AMA_preprocessing|function|20e22275f2e2851d|||||||||||||||
+make_grid_state|function|551837847e976d05|||||||||||||||
+target_critical|object|376ff09f7badd89b|||||||||||||||
+post_calc_autojoin2|function|6d4b929816a9df80|||||||||||||||
+target_initiate|object|3ee860198ede9bb9|||||||||||||||
+controller_10|object|c376ffa22371aa22|||||||||||||||
+gridmet_process|function|8b149b5e39c2de6d|||||||||||||||
+select_states|function|f8d75d67b5e44081|||||||||||||||
+process_haps|function|2e7eaf5efc6609df|||||||||||||||
+AMA_select|function|18e4a1bf62847668|||||||||||||||
+gridmet_cleanup|function|f7d49c9f8587b29f|||||||||||||||
+target_covariates_predgrid|object|0258d7cf35c5f7e6|||||||||||||||
+join_covariates|function|058d96c56a7204dd|||||||||||||||
+target_covariates_nc|object|87d98585c75b36e3|||||||||||||||
+target_haps|object|9fd145d198fd12a1|||||||||||||||
+controller_100|object|4266760c2a220dc5|||||||||||||||
+target_fit|object|d6832a994acffab6|||||||||||||||
+pgp_fit|function|3245638fad181309|||||||||||||||
+AMA_LC2STDRatio_Site|function|d4f4ec74e9858aa4|||||||||||||||
+target_covariates|object|6b0d2971b8630df0|||||||||||||||
+controller_50|object|9bec5f58d854afe5|||||||||||||||
+controller_250|object|8940b132ba8abf66|||||||||||||||
+pgp_cv|function|4cbc02f3f9012951|||||||||||||||
+post_calc_pca|function|06a4b7febb9e4831|||||||||||||||
+model_fit_nc|stem|28f1d988ad766a3f|4365a5703181b03b|4a6fb15165e53dc2|1757765721||t20189.9198699852s||159131135|rds|local|vector|||0.035||lengthdates  2 is not TRUE
 pgp_pred|function|e91b31378d351f4a
-.Random.seed|object|832117ef6e506fec
+pgp_preprocessing|function|ffbd21c50785804c
+.Random.seed|object|782fe1a52d27816a
 pred_test|function|edbe73ca82e8a852
 controller_25|object|40ef6fd08a570411
 AMA_LC2STDRatio|function|8427fb1b752e54e7
@@ -1685,7 +1726,6 @@ AMA_duration2daily|function|6d8b02446d02aa45
 reduce_pca|function|be465792e15e7ec1
 controller_1|object|a60daa361b3030c5
 AMA_preprocessing|function|20e22275f2e2851d
-target_covjoin|object|37921f1453c6a671
 make_grid_state|function|551837847e976d05
 target_critical|object|376ff09f7badd89b
 post_calc_autojoin2|function|6d4b929816a9df80
@@ -1696,19 +1736,16 @@ select_states|function|f8d75d67b5e44081
 process_haps|function|2e7eaf5efc6609df
 AMA_select|function|18e4a1bf62847668
 gridmet_cleanup|function|f7d49c9f8587b29f
-target_covariates_predgrid|object|a7647b674a7bf0ab
+target_covariates_predgrid|object|0258d7cf35c5f7e6
 join_covariates|function|058d96c56a7204dd
-target_covariates_nc|object|9bd16af4643080e3
+target_covariates_nc|object|87d98585c75b36e3
 target_haps|object|9fd145d198fd12a1
 controller_100|object|4266760c2a220dc5
-target_fit|object|1a6de56fa43df2d8
-pgp_fit|function|7485ee68948e6f22
+target_fit|object|d6832a994acffab6
+pgp_fit|function|a78366fe1145810b
 AMA_LC2STDRatio_Site|function|d4f4ec74e9858aa4
 target_covariates|object|6b0d2971b8630df0
 controller_50|object|9bec5f58d854afe5
 controller_250|object|8940b132ba8abf66
 pgp_cv|function|4cbc02f3f9012951
 post_calc_pca|function|06a4b7febb9e4831
-list_feat_calc_narr_lag_pred|pattern|18938ce4858ce807|95615e6f62202483||1418589498||||0|rds|local|list||list_feat_calc_narr_lag_pred_d34b3e297fee4700*list_feat_calc_narr_lag_pred_08056195ab7d83ee*list_feat_calc_narr_lag_pred_d96b357bc665a724*list_feat_calc_narr_lag_pred_f81c05ce9ffe2b34*list_feat_calc_narr_lag_pred_a7e385f275008c6b*list_feat_calc_narr_lag_pred_ec8f538c810a28ec|0||
-list_feat_calc_base_flat_pred|stem||e8fa4f31541c76d9|6aaec0d766f94117|76194589||t20194.658162397s||0|rds|local|vector|||0.003||object dt_feat_calc_ecoregions_pred not found
-dt_feat_calc_narr_pred|stem|cb06d429209a43da|0ee143037c239999|10432083498eab2f|988670327||t20194.6583506957s|s52101037b|52101037|rds|local|vector|||3.093||

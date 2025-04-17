@@ -59,13 +59,35 @@ controller_1 <- crew::crew_controller_local(
 
 # Set target options:
 tar_option_set(
-  packages = c("tibble","targets","plyr","dplyr","data.table","tidyr","openxlsx",
-  "stringr","amadeus","PrestoGP","crew","qs2","beethoven","rsample","spatialsample",
-  "sf","Metrics","tigris"),
+  packages = c(
+    "tibble",
+    "targets",
+    "plyr",
+    "dplyr",
+    "data.table",
+    "tidyr",
+    "openxlsx",
+    "stringr",
+    "amadeus",
+    "PrestoGP",
+    "crew",
+    "qs2",
+    "beethoven",
+    "rsample",
+    "spatialsample",
+    "sf",
+    "Metrics",
+    "tigris"
+  ),
   #format = "qs",
   controller = crew::crew_controller_group(
-    controller_250, controller_100, controller_50,
-    controller_25, controller_10, controller_1),
+    controller_250,
+    controller_100,
+    controller_50,
+    controller_25,
+    controller_10,
+    controller_1
+  ),
   resources = targets::tar_resources(
     crew = targets::tar_resources_crew(controller = "controller_250")
   ),
@@ -94,15 +116,13 @@ tar_source("R/make_grid_state.R")
 tar_source("R/post_calc_autojoin2.R")
 tar_source("R/impute_all2.R")
 tar_source("R/gridmet_cleanup.R")
+tar_source("R/pgp_preprocessing.R")
 
 ###########################      SOURCE TARGETS      ###########################
 targets::tar_source("inst/targets/targets_critical.R")
 targets::tar_source("inst/targets/targets_initiate.R")
 targets::tar_source("inst/targets/targets_haps.R")
 targets::tar_source("inst/targets/targets_covariates.R")
-targets::tar_source("inst/targets/targets_covariates_NC.R")
-targets::tar_source("inst/targets/targets_covjoin.R")
-#targets::tar_source("inst/targets/targets_predgrid.R")
 targets::tar_source("inst/targets/targets_covariates_predgrid.R")
 targets::tar_source("inst/targets/targets_fit.R")
 
@@ -112,9 +132,6 @@ list(
   target_initiate,
   target_haps,
   target_covariates,
-  target_covariates_predgrid#,
- # target_covariates_nc,
- # target_covjoin,
- # target_predgrid,
- # target_fit
+  #target_covariates_predgrid,
+  target_fit
 )

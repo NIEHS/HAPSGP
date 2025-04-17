@@ -1,169 +1,202 @@
-# Presto GP cross-validation fit
-#nolint start
+#' Cross-validated PrestoGP Model Fit
+#'
+#' This function performs cross-validation (random or spatial) using the PrestoGP model
+#' on air pollution data, supporting multiple chemical species and optional log-transformation.
+#'
+#' @param data A data frame or RDS file path containing pollution data with required columns.
+#' @param dates A character vector of dates ("YYYY-MM-DD") to include in the model.
+#' @param vars Character vector of column names to exclude from covariates.
+#' @param logscale Logical; whether to log-transform concentration and MDL values.
+#' @param cv_splits Integer number of cross-validation folds.
+#' @param cv_method Cross-validation method: `"random"` (default), `"spatialsnake"`, or `"spatialrandom"`.
+#'
+#' @return A list containing:
+#' \describe{
+#'   \item{dates_vec}{Vector of dates used in the fit.}
+#'   \item{chemlist}{Vector of unique chemical names (AQS_PARAMETER_NAME) in the dataset.}
+#'   \item{logscale}{Logical value indicating whether log-transformation was applied.}
+#'   \item{otr}{List of training set row indices for each cross-validation fold.}
+#'   \item{otst}{List of test set row indices for each cross-validation fold.}
+#'   \item{ytest.list}{List of test set response vectors (one per chemical) for each fold.}
+#'   \item{model.list}{List of fitted PrestoGP models, one for each fold.}
+#'   \item{pred.list}{List of predicted response values for each fold (unlisted across chemicals).}
+#'   \item{mse.list}{List of mean squared error (MSE) values for each fold.}
+#' }
+#'
+#' @importFrom dplyr mutate filter row_number
+#' @importFrom sf st_as_sf
+#' @importFrom rsample vfold_cv analysis assessment
+#' @importFrom spatialsample spatial_block_cv
+#' @export
+pgp_cv <- function(
+  data,
+  dates,
+  vars,
+  logscale,
+  cv_splits,
+  cv_method = "random"
+) {
+  set.seed(33) # For reproducibility
 
-pgp_cv=function(data,dates, vars, cv_splits, cv_method="random"){
+  # ---- Validate inputs ----
+  stopifnot(is.data.frame(data) || is.character(data))
+  stopifnot(length(dates) >= 1)
+  stopifnot(is.logical(logscale))
+  stopifnot(cv_method %in% c("random", "spatialsnake", "spatialrandom"))
 
-set.seed(33)
-# Read in HAPS
-#df=readRDS(data)
-df=as.data.frame(data)
+  # ---- Load and prepare data ----
+  if (is.character(data)) {
+    df <- readRDS(data)
+  } else {
+    df <- as.data.frame(data)
+  }
 
-# change rows with measurement=0 to very small values 
-df <- df %>%
-  mutate(CONC_DAILY_STD = if_else(CONC_DAILY_STD <= 0, MDL_DAILY_STD_UG_M3 / 20, CONC_DAILY_STD)) %>%
-  filter(CONC_DAILY_STD < 300 )
+  conc_col <- "CONC_DAILY_STD"
+  mdl_col <- "MDL_DAILY_STD_UG_M3"
+  chem_col <- "AQS_PARAMETER_NAME"
 
-# Change NA's or <=0s in MDL 
-df <- df %>%
-  group_by(AQS_PARAMETER_CODE) %>%
-  mutate(MDL_DAILY_STD_UG_M3 = if_else(MDL_DAILY_STD_UG_M3 <= 0 | is.na(MDL_DAILY_STD_UG_M3),
-                                       min(CONC_DAILY_STD[CONC_DAILY_STD > 0], na.rm = TRUE) / 10,
-                                       MDL_DAILY_STD_UG_M3)) %>%
-  ungroup()
+  dates <- as.Date(dates)
 
-# Select only one instance in case of repeat site-times with different duration_desc
-df=df %>% group_by(AQS_PARAMETER_CODE,AMA_SITE_CODE,time) %>% # group by pollutant/site/year/duration (across days)
-    filter(DURATION_DESC == min(DURATION_DESC)) %>%
-    ungroup() 
+  df <- df %>%
+    dplyr::mutate(time = as.Date(time)) %>%
+    dplyr::filter(time %in% dates) %>%
+    dplyr::mutate(
+      time = as.numeric(time),
+      idx = dplyr::row_number()
+    )
 
-dates <- as.Date(dates)
+  # ---- Covariates & Location Columns ----
+  noncov_names <- c(vars, "time", "lon", "lat", "year")
+  cov_names <- setdiff(names(df), noncov_names)
+  cov_ind <- which(names(df) %in% cov_names)
+  loc_ind <- c(
+    which(colnames(df) == "lon"),
+    which(colnames(df) == "lat"),
+    which(colnames(df) == "time")
+  )
 
-df = df %>%
-  mutate(time = as.Date(time)) %>%
-  filter(time %in% dates) %>%
-  mutate(time = as.numeric(time)) %>%
-  mutate(idx = row_number())
+  # ---- Optional log transformation ----
+  if (logscale) {
+    df[[conc_col]] <- log(df[[conc_col]])
+    df[[mdl_col]] <- log(df[[mdl_col]])
+  }
 
-# remove rows with NA's in covariates
-#Get covariate indeces
-noncov_names=c(vars,"time","lon","lat","year")
-cov_ind <- which(!names(df) %in% noncov_names)
-loc_ind = c(which(colnames(df)== "lon"), which(colnames(df)== "lat"),which(colnames(df)== "time"))
+  # ---- Remove Rows with Incomplete Covariates ----
+  # (Covariate Rows should be full through previous imputation, this is just a failsafe)
+  df <- df[complete.cases(df[, cov_ind, drop = FALSE]), ]
 
-# remove rows with NA's in covariates
-df <- df[!Reduce(`|`, lapply(df[, cov_ind, drop = FALSE], is.na)), ]
+  # ---- Cross-validation splitting ----
+  if (startsWith(cv_method, "spatial")) {
+    df_sf <- sf::st_as_sf(df, coords = c("lon", "lat"), crs = "EPSG:4326")
+    method_type <- if (cv_method == "spatialsnake") "snake" else "random"
+    cvsplit <- spatialsample::spatial_block_cv(
+      df_sf,
+      v = cv_splits,
+      method = method_type
+    )
+  } else {
+    cvsplit <- rsample::vfold_cv(df, v = cv_splits)
+  }
 
-# Crossvalidation split
-# Convert to sf
-df_sf = st_as_sf(df, coords=c("lon","lat"),crs="EPSG:4326")
-# Separate into cross-validation sets
-rep=cv_splits
-if (cv_method == "spatial") {
-  cvsplit <- spatialsample::spatial_block_cv(df_sf, v = rep, method = "snake")
-} else if (cv_method == "random") {
-  cvsplit <- rsample::vfold_cv(df, v = rep)
-} else {
-  stop("Please specify valid CV method (either 'spatial' or 'random')")
+  # ---- Initialize Lists ----
+  otr <- list()
+  otst <- list()
+  model.list <- list()
+  pred.list <- list()
+  ytest.list <- list()
+  mse.list <- list()
+
+  # ---- Loop through folds ----
+  for (r in seq_len(cv_splits)) {
+    message("CV fold ", r)
+
+    dftr <- spatialsample::analysis(cvsplit$splits[[r]])
+    dftt <- spatialsample::assessment(cvsplit$splits[[r]])
+
+    otr[[r]] <- dftr$idx
+    otst[[r]] <- dftt$idx
+
+    dftrain <- df[otr[[r]], ]
+    dftest <- df[otst[[r]], ]
+
+    ym <- list()
+    Xm <- list()
+    locsm <- list()
+    lodsm <- list()
+
+    ytest <- list()
+    Xtest <- list()
+    locstest <- list()
+
+    chemlist <- sort(unique(df[[chem_col]]))
+
+    for (i in seq_along(chemlist)) {
+      chem <- chemlist[i]
+      dfchem <- dftrain %>% dplyr::filter(.data[[chem_col]] == chem)
+
+      y3 <- dfchem[[conc_col]]
+      X3 <- as.matrix(dfchem[, cov_ind])
+      colnames(X3) <- paste0(colnames(X3), "_", chem)
+
+      locs3 <- as.matrix(dfchem[, loc_ind])
+      lods3 <- dfchem[[mdl_col]]
+
+      ym[[i]] <- y3
+      Xm[[i]] <- X3
+      locsm[[i]] <- locs3
+      lodsm[[i]] <- lods3
+
+      dfchem_test <- dftest %>% dplyr::filter(.data[[chem_col]] == chem)
+
+      yt <- dfchem_test[[conc_col]]
+      Xt <- as.matrix(dfchem_test[, cov_ind])
+      colnames(Xt) <- paste0(colnames(Xt), "_", chem)
+
+      locst <- as.matrix(dfchem_test[, loc_ind])
+
+      ytest[[i]] <- yt
+      Xtest[[i]] <- Xt
+      locstest[[i]] <- locst
+    }
+
+    message("Fitting model on training set...")
+    all.mvm <- new("MultivariateVecchiaModel", n_neighbors = 10)
+    all.mvm2 <- prestogp_fit(
+      all.mvm,
+      ym,
+      Xm,
+      locsm,
+      lod = lodsm,
+      scaling = c(1, 1, 2),
+      impute.y = TRUE,
+      verbose = TRUE,
+      penalty = "relaxed"
+    )
+
+    message("Making prediction on testing set...")
+    pred <- prestogp_predict(model = all.mvm2, X = Xtest, locs = locstest) #,return.values = "meanvar")
+
+    model.mse <- mse(exp(unlist(ytest)), exp(unlist(pred)))
+    message("MSE: ", round(model.mse, 4))
+
+    ytest.list[[r]] <- ytest
+    model.list[[r]] <- all.mvm2
+    pred.list[[r]] <- unlist(pred)
+    mse.list[[r]] <- model.mse
+  }
+
+  # ---- Return results ----
+  results <- list(
+    dates_vec = dates,
+    chemlist = chemlist,
+    logscale = logscale,
+    otr = otr,
+    otst = otst,
+    ytest.list = ytest.list,
+    model.list = model.list,
+    pred.list = pred.list,
+    mse.list = mse.list
+  )
+
+  return(results)
 }
-
-otr<-list()
-otst<-list()
-
-model.list <-list()
-pred.list <-list()
-ytest.list<-list()
-mse.list<-list()
-
-for (r in 1:rep){
-print (paste("CV fold", r))
-
-#h=2
-cvsplit <- vfold_cv(df, v = rep)
-dftr <- spatialsample::analysis(cvsplit$splits[[r]])
-dftt <- spatialsample::assessment(cvsplit$splits[[r]])
-
-otr[[r]]<-dftr$idx
-otst[[r]]<-dftt$idx
-
-# Old code for random-index CV
-#set.seed(33)
-#otr<-list()
-#otst<-list()
-#n <- nrow(df2)
-#otrvec <- rep(TRUE, n)
-#otrvec[sample(1:n, size=floor(n/10))] <- FALSE
-#otstvec <- !otrvec
-#otr[[r]]<-otrvec
-#otst[[r]]<-otstvec
-
-dftrain=df[otr[[r]],]
-dftest=df[otst[[r]],]
-
-#Initialize lists
-ym <- list()
-Xm <- list()
-locsm <- list()
-lodsm <- list()
-
-ytest <- list()
-Xtest <- list()
-locstest <- list()
-
-#Loop through chemicals to populate lists
-chemlist=sort(unique(df$AQS_PARAMETER_NAME))
-
-for(i in 1:length(chemlist)){
-dfchem=as.data.frame(dftrain %>% filter(AQS_PARAMETER_NAME == chemlist[i]))
-#dfchem=as.data.frame(df_sf %>% filter(AQS_PARAMETER_NAME == chemlist[i])%>% 
-#         mutate(lon = st_coordinates(.)[, 1], lat = st_coordinates(.)[, 2]))
-#dfchem=df2 %>% filter(AQS_PARAMETER_NAME == chemlist[i])
-
-y3 <- log(dfchem$CONC_DAILY_STD)
-X3<- as.matrix(dfchem[,cov_ind])[,1:length(cov_ind)]
-colnames(X3)=paste0(colnames(X3), chemlist[i])
-
-# columns 1+2 are location coordinates; column 3 is time
-locs3 <- as.matrix(dfchem[,loc_ind])[,1:3]
-lods3 = log(dfchem$MDL_DAILY_STD_UG_M3)
-
-ym[[i]] <- y3
-Xm[[i]] <- X3
-locsm[[i]] <- locs3
-lodsm[[i]] <- lods3
-
-# set up test X and locs
-dfchem_test=dftest %>% filter(AQS_PARAMETER_NAME == chemlist[i])
-
-yt<- log(dfchem_test$CONC_DAILY_STD)
-Xt<- as.matrix(dfchem_test[,cov_ind])
-colnames(Xt)=paste0(colnames(Xt), chemlist[i])
-
-locst <- as.matrix(dfchem_test[,loc_ind])
-
-ytest[[i]] <- yt
-Xtest[[i]] <- Xt
-locstest[[i]] <- locst
-}
-
-print("Fitting model on training set...")
-# Multivariate Vecchia model
-all.mvm <-  new("MultivariateVecchiaModel", n_neighbors = 10)
-all.mvm2 <- prestogp_fit(all.mvm, ym, Xm, locsm, lod=lodsm, scaling = c(1, 1, 2),impute.y=TRUE, verbose=TRUE,penalty="SCAD")
-
-print("Making prediction on testing set...")
-pred <- prestogp_predict(model=all.mvm2,X = Xtest,locs = locstest,return.values = "meanvar")
-
-model.mse=mse(exp(unlist(ytest)),exp(unlist(pred)))
-print(model.mse)
-
-# Add output to lists
-ytest.list[[r]]=ytest
-model.list[[r]]=all.mvm2
-pred.list[[r]]=unlist(pred)
-mse.list[[r]]=model.mse
-} #r
-
-#Compile results
-results=list()
-
-results$otr=otr
-results$otst=otst
-results$ytest.list=ytest.list
-results$model.list=model.list
-results$pred.list=pred.list
-results$mse.list=mse.list
-
-return(results)
-#saveRDS(results, paste0("output/AGU/pgpagu_spatcvfit_",dates[1],"_",dates[2],".RDS"))
-}
-# nolint end
