@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=HAPSGP_container
 #SBATCH --partition=geo
-#SBATCH --mem=100G
+#SBATCH --mem=200G
 #SBATCH --cpus-per-task=100
 #SBATCH --ntasks-per-node=1
 #SBATCH --nodes=1

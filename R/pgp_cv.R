@@ -170,18 +170,19 @@ pgp_cv <- function(
       scaling = c(1, 1, 2),
       impute.y = TRUE,
       verbose = TRUE,
-      penalty = "relaxed"
+      penalty = "SCAD"
     )
 
     message("Making prediction on testing set...")
     pred <- prestogp_predict(model = all.mvm2, X = Xtest, locs = locstest) #,return.values = "meanvar")
 
-    model.mse <- mse(exp(unlist(ytest)), exp(unlist(pred)))
+    # model.mse <- mse(unlist(ytest), unlist(pred)) # Will check this again, may not be correct
+    model.mse <- mapply(Metrics::mse, ytest, pred)
     message("MSE: ", round(model.mse, 4))
 
     ytest.list[[r]] <- ytest
     model.list[[r]] <- all.mvm2
-    pred.list[[r]] <- unlist(pred)
+    pred.list[[r]] <- pred
     mse.list[[r]] <- model.mse
   }
 
