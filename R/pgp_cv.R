@@ -36,8 +36,6 @@ pgp_cv <- function(
   cv_splits,
   cv_method = "random"
 ) {
-  set.seed(33) # For reproducibility
-
   # ---- Validate inputs ----
   stopifnot(is.data.frame(data) || is.character(data))
   stopifnot(length(dates) >= 1)
