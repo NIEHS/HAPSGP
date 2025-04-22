@@ -174,7 +174,12 @@ pgp_cv <- function(
     )
 
     message("Making prediction on testing set...")
-    pred <- prestogp_predict(model = all.mvm2, X = Xtest, locs = locstest) #,return.values = "meanvar")
+    pred <- prestogp_predict(
+      model = all.mvm2,
+      X = Xtest,
+      locs = locstest,
+      return.values = "meanvar"
+    )
 
     # model.mse <- mse(unlist(ytest), unlist(pred)) # Will check this again, may not be correct
     # model.mse <- mapply(Metrics::mse, ytest, pred)
@@ -182,7 +187,7 @@ pgp_cv <- function(
 
     ytest.list[[r]] <- ytest
     model.list[[r]] <- all.mvm2
-    pred.list[[r]] <- pred
+    pred.list[[r]] <- pred[[1]]
     # mse.list[[r]] <- model.mse
   }
 
@@ -190,6 +195,7 @@ pgp_cv <- function(
   results <- list(
     dates_vec = dates,
     chemlist = chemlist,
+    cv_method = cv_method,
     logscale = logscale,
     otr = otr,
     otst = otst,
