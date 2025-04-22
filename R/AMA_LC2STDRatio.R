@@ -1,4 +1,5 @@
 ################################################################################
+# nolint start
 ## PURPOSE: AMA_LC2STDRatio.R creates the ratio between LC and standard 
 ##          conditions of air toxics in the AMA data set. This ratio is then 
 ##          later used to estimate LC when only standard conditions are known.
@@ -18,8 +19,8 @@
 ##          LC = Local Conditions 
 ##          STD = standard conditions
 ################################################################################
-AMA_LC2STDRatio <- function(data.dir,results.dir,amayr,allyears){
-  
+AMA_LC2STDRatio <- function(filelist){
+#AMA_LC2STDRatio <- function(filelist,results.dir,amayr,allyears){
   ##### PART 1: INITIALIZE AQS PARAMETER LISTS #####
   
   AQS_4CLBD = '17902' # Dibenzo[b,e][1,4]dioxin,2,3,7,8-tetrachloro (TSP) STP
@@ -45,14 +46,15 @@ AMA_LC2STDRatio <- function(data.dir,results.dir,amayr,allyears){
                  '86142','86152','86154','86179') # coarse metals
   
   ##### PART 2: FIND WHERE STD IS INCOMPLETE AND COMPUTE LC/STD RATIOS #####
-  
+  filelist2=list()
   # looping through each year
-  for(i in 1:length(allyears)){
+  for(i in 1:length(filelist)){
     
     # load year of AMA data
-    print(allyears[i])
-    load(paste(data.dir,'AMA_',allyears[i],'.Rda',sep=''))
-    
+    #load(paste(data.dir,'AMA_select_',allyears[i],'.Rda',sep=''))
+    #load(paste(data.dir,'AMA_select_',allyears[i],'.Rda',sep=''))
+    #load(filelist[[i]])
+    AMA=filelist[[i]]
     # subsetting data
     AMA_sub = data.table(AMA) %>%
       mutate(AQS_PARAMETER_CODE = AQS_PARAMETER_CODE_FINAL,
@@ -100,28 +102,46 @@ AMA_LC2STDRatio <- function(data.dir,results.dir,amayr,allyears){
       ungroup()
     
     # save file
-    save(AMA_STDmiss,AMA_RatioPollPOCDayDur,AMA_RatioSiteDay,AMA_RatioSiteQuart,AMA_RatioSiteYr,
-         file=paste(results.dir,'AMA',amayr,'_LCSTDRatio_',allyears[i],'.Rda',sep=''))
+   # fname=paste(results.dir,'AMA',amayr,'_LCSTDRatio_',allyears[i],'.Rda',sep='')
+   # save(AMA_STDmiss,AMA_RatioPollPOCDayDur,AMA_RatioSiteDay,AMA_RatioSiteQuart,AMA_RatioSiteYr,
+   #      file=fname)
     
+    LC2STD_list= list(
+    AMA_STDmiss = AMA_STDmiss,
+    AMA_RatioPollPOCDayDur = AMA_RatioPollPOCDayDur,
+    AMA_RatioSiteDay = AMA_RatioSiteDay,
+    AMA_RatioSiteQuart = AMA_RatioSiteQuart,
+    AMA_RatioSiteYr = AMA_RatioSiteYr)
+
+    filelist2[[i]]=LC2STD_list
+    #filelist2[[i]]=fname
+
   } # looping through each AMA year 
-  
-  ##### PART 3: COMBINE ALL THE RATIO DATA TOGETHER #####
-  
+  return(filelist2)
+} # End function
+
+AMA_LC2STDRatio_Site=function(filelist){
+#AMA_LC2STDRatio_Site=function(filelist,results.dir,amayr,allyears){
+  ##### PART 3: COMBINE ALL THE RATIO DATA TOGETHER #####  
   # combine all the years together and get a ratio across all years per site
   
   AMA_RatioAll = list() # create empty list to put all the ratio data in
   # looping through each year
-  for(i in 1:length(allyears)){
-    print(allyears[i])
-    load(file=paste(results.dir,'AMA',amayr,'_LCSTDRatio_',allyears[i],'.Rda',sep='')) # load year of data
-    AMA_RatioAll[[i]] = AMA_RatioSiteYr # adding to the list
+  for(i in 1:length(filelist)){
+   # print(allyears[i])
+    ylist=filelist[[i]] # load year of data
+    AMA_RatioAll[[i]] = ylist$AMA_RatioSiteYr # adding to the list
   }
   AMA_RatioAll = do.call('rbind', AMA_RatioAll) # unlisting all ratio data into one dataframe
   
   # ratio across all years for pollutant/POC
   AMA_RatioSite = AMA_RatioAll %>% group_by(AMA_SITE_CODE) %>% mutate(LCSTDratio_Site=mean(LCSTDratio_SiteYr))
   
+ # fname=paste(results.dir,'AMA',amayr,'_LCSTDRatio_Site','.Rda',sep='')
   # save file
-  save(AMA_RatioSite,file=paste(results.dir,'AMA',amayr,'_LCSTDRatio_Site','.Rda',sep=''))
+ # save(AMA_RatioSite,file=fname)
   
+  return(AMA_RatioSite)
+  #return(fname)
 }
+#nolint end
