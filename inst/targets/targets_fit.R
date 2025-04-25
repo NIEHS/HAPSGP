@@ -36,17 +36,6 @@ target_fit <-
       )
     ),
     targets::tar_target(
-      name = pgp_crossvalidation_nc_randomlog,
-      command = pgp_cv(
-        data = pgp_cleanup_nc,
-        dates = model_dates,
-        vars = vars,
-        logscale = TRUE,
-        cv_method = "random",
-        cv_splits = 5
-      )
-    ),
-    targets::tar_target(
       name = pgp_crossvalidation_nc_spatrandom,
       command = pgp_cv(
         data = pgp_cleanup_nc,
@@ -58,34 +47,12 @@ target_fit <-
       )
     ),
     targets::tar_target(
-      name = pgp_crossvalidation_nc_spatrandomlog,
-      command = pgp_cv(
-        data = pgp_cleanup_nc,
-        dates = model_dates,
-        vars = vars,
-        logscale = TRUE,
-        cv_method = "spatialrandom",
-        cv_splits = 5
-      )
-    ),
-    targets::tar_target(
       name = pgp_crossvalidation_nc_spatsnake,
       command = pgp_cv(
         data = pgp_cleanup_nc,
         dates = model_dates,
         vars = vars,
         logscale = FALSE,
-        cv_method = "spatialsnake",
-        cv_splits = 5
-      )
-    ),
-    targets::tar_target(
-      name = pgp_crossvalidation_nc_spatsnakelog,
-      command = pgp_cv(
-        data = pgp_cleanup_nc,
-        dates = model_dates,
-        vars = vars,
-        logscale = TRUE,
         cv_method = "spatialsnake",
         cv_splits = 5
       )

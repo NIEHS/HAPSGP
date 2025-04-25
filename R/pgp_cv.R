@@ -20,7 +20,7 @@
 #'   \item{ytest.list}{List of test set response vectors (one per chemical) for each fold.}
 #'   \item{model.list}{List of fitted PrestoGP models, one for each fold.}
 #'   \item{pred.list}{List of predicted response values for each fold (unlisted across chemicals).}
-#'   \item{mse.list}{List of mean squared error (MSE) values for each fold.}
+#'   \item{mdl.list}{List of minimum detection limit (MDL) values for each fold.}
 #' }
 #'
 #' @importFrom dplyr mutate filter row_number
@@ -102,7 +102,7 @@ pgp_cv <- function(
   model.list <- list()
   pred.list <- list()
   ytest.list <- list()
-  # mse.list <- list()
+  mdl.list <- list()
 
   # ---- Loop through folds ----
   for (r in seq_len(cv_splits)) {
@@ -125,6 +125,7 @@ pgp_cv <- function(
     ytest <- list()
     Xtest <- list()
     locstest <- list()
+    lodstest <- list()
 
     chemlist <- sort(unique(df[[chem_col]]))
 
@@ -151,10 +152,12 @@ pgp_cv <- function(
       colnames(Xt) <- paste0(colnames(Xt), "_", chem)
 
       locst <- as.matrix(dfchem_test[, loc_ind])
+      lodst <- dfchem_test[[mdl_col]]
 
       ytest[[i]] <- yt
       Xtest[[i]] <- Xt
       locstest[[i]] <- locst
+      lodstest[[i]] <- lodst
     }
 
     message("Fitting model on training set...")
@@ -175,18 +178,14 @@ pgp_cv <- function(
     pred <- prestogp_predict(
       model = all.mvm2,
       X = Xtest,
-      locs = locstest,
-      return.values = "meanvar"
+      locs = locstest #,
+      #return.values = "meanvar"
     )
-
-    # model.mse <- mse(unlist(ytest), unlist(pred)) # Will check this again, may not be correct
-    # model.mse <- mapply(Metrics::mse, ytest, pred)
-    # message("MSE: ", round(model.mse, 4))
 
     ytest.list[[r]] <- ytest
     model.list[[r]] <- all.mvm2
     pred.list[[r]] <- pred[[1]]
-    # mse.list[[r]] <- model.mse
+    mdl.list[[r]] <- lodstest
   }
 
   # ---- Return results ----
@@ -199,8 +198,8 @@ pgp_cv <- function(
     otst = otst,
     ytest.list = ytest.list,
     model.list = model.list,
-    pred.list = pred.list #,
-    # mse.list = mse.list
+    pred.list = pred.list,
+    mdl.list = mdl.list
   )
 
   return(results)

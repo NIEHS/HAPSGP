@@ -6,6 +6,7 @@ library(Metrics)
 evaluate_cv <- function(cv_obj, log_scale = FALSE) {
   ytest.list <- cv_obj$ytest.list
   pred.list <- cv_obj$pred.list
+  mdl.list <- cv_obj$mdl.list
 
   metrics <- data.frame(
     nrmse_Benzene = numeric(5),
@@ -17,13 +18,16 @@ evaluate_cv <- function(cv_obj, log_scale = FALSE) {
   )
 
   for (i in 1:5) {
+    mdl.vec <- mdl.list[[i]]
     yvec <- ytest.list[[i]]
-    pvec <- pred.list[[i]][[1]]
+    pvec <- pred.list[[i]]
 
-    y1 <- yvec[[1]]
-    y2 <- yvec[[2]]
-    p1 <- pvec[[1]]
-    p2 <- pvec[[2]]
+    cens1 = which(yvec[[1]] > mdl.vec[[1]])
+    cens2 = which(yvec[[2]] > mdl.vec[[2]])
+    y1 <- yvec[[1]][cens1]
+    y2 <- yvec[[2]][cens2]
+    p1 <- pvec[[1]][cens1]
+    p2 <- pvec[[2]][cens2]
 
     if (log_scale) {
       y1 <- exp(y1)
@@ -46,26 +50,26 @@ evaluate_cv <- function(cv_obj, log_scale = FALSE) {
 # Define all CV types and names
 cv_methods <- list(
   random = list(obj = tar_read(pgp_crossvalidation_nc_random), log = FALSE),
-  randomlog = list(
-    obj = tar_read(pgp_crossvalidation_nc_randomlog),
-    log = TRUE
-  ),
+  #randomlog = list(
+  #  obj = tar_read(pgp_crossvalidation_nc_randomlog),
+  #  log = TRUE
+  #),
   spatrandom = list(
     obj = tar_read(pgp_crossvalidation_nc_spatrandom),
     log = FALSE
   ),
-  spatrandomlog = list(
-    obj = tar_read(pgp_crossvalidation_nc_spatrandomlog),
-    log = TRUE
-  ),
+  #spatrandomlog = list(
+  #  obj = tar_read(pgp_crossvalidation_nc_spatrandomlog),
+  #  log = TRUE
+  #),
   spatsnake = list(
     obj = tar_read(pgp_crossvalidation_nc_spatsnake),
     log = FALSE
-  ),
-  spatsnakelog = list(
-    obj = tar_read(pgp_crossvalidation_nc_spatsnakelog),
-    log = TRUE
-  )
+  ) #,
+  #spatsnakelog = list(
+  #  obj = tar_read(pgp_crossvalidation_nc_spatsnakelog),
+  #  log = TRUE
+  #)
 )
 
 # Evaluate all methods and combine results
