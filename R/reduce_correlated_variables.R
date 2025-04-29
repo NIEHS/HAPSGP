@@ -2,16 +2,18 @@
 #'
 #' Identifies groups of highly correlated variables (above a specified threshold)
 #' and retains only the variable with the highest variance in each group.
+#' Non-covariate columns are preserved and returned with the final dataset.
 #'
 #' @param dt A `data.table` containing the full dataset.
 #' @param noncovariate_cols A character vector of column names to exclude from correlation analysis.
 #' @param cor_threshold A numeric value between 0 and 1 specifying the correlation threshold (default is 0.98).
 #' @param return_dropped Logical. If TRUE, returns a list including the dropped variables.
 #'
-#' @return A `data.table` with reduced multicollinearity. If `return_dropped = TRUE`, returns a list with:
+#' @return A `data.table` with reduced multicollinearity, including non-covariate columns.
+#' If `return_dropped = TRUE`, returns a list:
 #' \describe{
 #'   \item{data}{The filtered `data.table`.}
-#'   \item{dropped}{Character vector of dropped variable names.}
+#'   \item{dropped}{Character vector of dropped covariate names.}
 #' }
 #' @export
 #'
@@ -20,8 +22,8 @@
 #' result <- reduce_correlated_variables(dt, cor_threshold = 0.9)
 reduce_correlated_variables <- function(
   dt,
-  noncovariate_cols = c("time", "AMA_SITE_CODE"),
-  cor_threshold = 0.98,
+  noncovariate_cols = c("time", "AMA_SITE_CODE", "lon", "lat", "year"),
+  cor_threshold = 0.89,
   return_dropped = FALSE
 ) {
   require(data.table)
@@ -29,22 +31,26 @@ reduce_correlated_variables <- function(
 
   dt <- copy(dt) # avoid modifying by reference
 
-  # Select only covariate columns
+  # Separate covariates and non-covariates
   cov_data <- dt[, setdiff(names(dt), noncovariate_cols), with = FALSE]
+  noncov_data <- dt[, intersect(names(dt), noncovariate_cols), with = FALSE]
 
   # Filter: remove columns that are all NA, all 0s, or have <= 1 unique value
   keep_cols <- sapply(cov_data, function(col) {
     vals <- col[!is.na(col)]
     length(unique(vals)) > 1 && any(vals != 0)
   })
-  cov_data <- cov_data[, ..names(keep_cols)[keep_cols]]
+  cov_data <- cov_data[, names(keep_cols)[keep_cols], with = FALSE]
 
-  # If no variables left, return early
-  if (ncol(cov_data) < 2) {
-    warning("Not enough valid covariates after filtering.")
+  # Catch: Not enough covariate columns
+  if (ncol(cov_data) <= 1) {
+    warning(
+      "Not enough covariate columns for reduction. Returning original dataset unchanged."
+    )
+    reduced_dt <- cbind(noncov_data, cov_data)
     return(
-      if (return_dropped) list(data = cov_data, dropped = character(0)) else
-        cov_data
+      if (return_dropped) list(data = reduced_dt, dropped = character(0)) else
+        reduced_dt
     )
   }
 
@@ -58,9 +64,10 @@ reduce_correlated_variables <- function(
   )
   if (nrow(high_cor_pairs) == 0) {
     message("No highly correlated pairs found.")
+    reduced_dt <- cbind(noncov_data, cov_data)
     return(
-      if (return_dropped) list(data = cov_data, dropped = character(0)) else
-        cov_data
+      if (return_dropped) list(data = reduced_dt, dropped = character(0)) else
+        reduced_dt
     )
   }
 
@@ -77,7 +84,7 @@ reduce_correlated_variables <- function(
 
   # Keep variable with highest variance in each group
   vars_to_keep <- sapply(grouped_vars, function(group_vars) {
-    group_dt <- cov_data[, ..group_vars]
+    group_dt <- cov_data[, group_vars, with = FALSE]
     var_vals <- sapply(group_dt, var, na.rm = TRUE)
     names(which.max(var_vals))
   })
@@ -87,8 +94,11 @@ reduce_correlated_variables <- function(
   vars_unrelated <- setdiff(names(cov_data), all_grouped_vars)
   final_vars <- c(vars_to_keep, vars_unrelated)
 
-  # Subset and return
-  reduced_dt <- cov_data[, ..final_vars]
+  # Subset covariates
+  reduced_cov_data <- cov_data[, final_vars, with = FALSE]
+
+  # Combine non-covariate and reduced covariate columns
+  reduced_dt <- cbind(noncov_data, reduced_cov_data)
 
   if (return_dropped) {
     dropped_vars <- setdiff(names(cov_data), final_vars)

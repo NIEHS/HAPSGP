@@ -117,6 +117,7 @@ tar_source("R/post_calc_autojoin2.R")
 tar_source("R/impute_all2.R")
 tar_source("R/gridmet_cleanup.R")
 tar_source("R/pgp_preprocessing.R")
+tar_source("R/reduce_correlated_variables.R")
 
 ###########################      SOURCE TARGETS      ###########################
 targets::tar_source("inst/targets/targets_critical.R")

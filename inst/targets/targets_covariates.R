@@ -2,34 +2,44 @@
 #nolint start
 target_covariates <-
   list(
-###########################     GRIDMET      ###########################
-     targets::tar_target(
+    ###########################     GRIDMET      ###########################
+    targets::tar_target(
       variables_gridmet,
-      command = c("vs","th","sph","pr","tmmn","tmmx","srad"),
-      description="gridmet variables"
-     )
-    ,
-     targets::tar_target(
+      command = c("vs", "th", "sph", "pr", "tmmn", "tmmx", "srad"),
+      description = "gridmet variables | fit"
+    ),
+    targets::tar_target(
       buffer_radius,
       command = c(0),
-      description="buffer radiuses"
-     )
-    ,
-     targets::tar_target(
+      description = "gridmet buffer radiuses | fit"
+    ),
+    targets::tar_target(
       gmet_process,
-      command = gridmet_process(data=process,
-      dates_gridmet=model_dates, input_dir="input/covariates/gridmet/",
-      variables_gridmet= variables_gridmet, radiuses=chr_iter_radii, output="merged",
-      haps_locs=haps_locs),
+      command = gridmet_process(
+        data = process,
+        dates_gridmet = model_dates,
+        input_dir = "input/covariates/gridmet/",
+        variables_gridmet = variables_gridmet,
+        radiuses = chr_iter_radii,
+        output = "merged",
+        haps_locs = haps_locs
+      ),
       #pattern=cross(variables_gridmet,model_dates),
-      description="Process covariates"
-     )
-    ,
+      description = "Process gridmet covariates| fit"
+    ),
     targets::tar_target(
       gmet_cleanup,
-      command=gridmet_cleanup(gmet_process,vars),
-        description="gridmet columns cleanup"
-     ),
+      command = gridmet_cleanup(gmet_process, vars),
+      description = "gridmet columns cleanup| fit"
+    ),
+    targets::tar_target(
+      gmet_reduce,
+      command = reduce_correlated_variables(
+        dt = gmet_cleanup,
+        cor_threshold = 0.89
+      ),
+      description = "gridmet collinearity reduction | fit"
+    ),
 
     ###########################      ECOREGIONS      ###########################
     targets::tar_target(
@@ -37,8 +47,7 @@ target_covariates <-
       #command = qs2::qs_read("/ddn/gs1/group/set/Projects/beethoven/targets/objects/download_ecoregions"),
       command = qs2::qs_read("/set_targets/objects/download_ecoregions"),
       description = "Read ecoregions data target from Beethoven"
-    )
-    ,
+    ),
     targets::tar_target(
       dt_feat_calc_ecoregions,
       command = {
@@ -53,22 +62,35 @@ target_covariates <-
                 "us_eco_l3_state_boundaries.shp"
               )
             ),
-            radius=100,
+            radius = 100,
             locs = haps_locs,
             locs_id = "AMA_SITE_CODE"
           )
         )
       },
       description = "data.table of Ecoregions features | fit"
-    )
-    ,
+    ),
+    targets::tar_target(
+      ecoregions_reduce,
+      command = reduce_correlated_variables(
+        dt = dt_feat_calc_ecoregions,
+        cor_threshold = 0.89
+      ),
+      description = "ecoregions collinearity reduction | fit"
+    ),
     ###########################      TRI/SEDC      ###########################
     targets::tar_target(
       download_tri,
-      #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects", 
-                #pattern = "^download_tri.*", full.names = TRUE)!= ""),
-      command= any(list.files("/set_targets/objects/", 
-                pattern = "^download_tri.*", full.names = TRUE)!= ""),
+      #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects",
+      #pattern = "^download_tri.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_tri.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
       #command = qs2::qs_read("/ddn/gs1/group/set/Projects/beethoven/targets/objects/download_tri"),
       #command = qs2::qs_read("/set_targets/objects/download_tri"),
       description = "Read TRI data target from Beethoven"
@@ -77,8 +99,7 @@ target_covariates <-
       chr_iter_radii_tri,
       command = c(1000, 10000),
       description = "Buffer radii for TRI"
-    )
-    ,
+    ),
     targets::tar_target(
       df_feat_calc_tri_params,
       command = expand.grid(
@@ -88,8 +109,7 @@ target_covariates <-
         split(seq_len(nrow(.))),
       iteration = "list",
       description = "TRI features"
-    )
-    ,
+    ),
     targets::tar_target(
       list_feat_calc_tri,
       command = {
@@ -113,8 +133,7 @@ target_covariates <-
       iteration = "list",
       pattern = map(df_feat_calc_tri_params),
       description = "Calculate TRI features"
-    )
-    ,
+    ),
     targets::tar_target(
       list_feat_reduce_tri,
       command = {
@@ -138,8 +157,7 @@ target_covariates <-
       iteration = "list",
       pattern = map(chr_iter_radii_tri),
       description = "Reduce TRI features based on radii | fit"
-    )
-    ,
+    ),
     targets::tar_target(
       dt_feat_calc_tri,
       command = {
@@ -162,30 +180,33 @@ target_covariates <-
         )
       },
       description = "data.table of TRI PCA-reduced features | fit"
-    )
-    ,
-      #command = beethoven::reduce_merge(
-      #  lapply(
-      #    list_feat_calc_tri,
-      #    function(x) data.table::data.table(beethoven::reduce_list(x)[[1]])
-      #  ),
-      #  by = NULL,
-      #  all.y=TRUE
-      #),
-###########################         NLCD         ###########################
-     targets::tar_target(
+    ),
+    #command = beethoven::reduce_merge(
+    #  lapply(
+    #    list_feat_calc_tri,
+    #    function(x) data.table::data.table(beethoven::reduce_list(x)[[1]])
+    #  ),
+    #  by = NULL,
+    #  all.y=TRUE
+    #),
+    ###########################         NLCD         ###########################
+    targets::tar_target(
       chr_iter_calc_nlcd,
       command = c(2019, 2021),
       description = "NLCD years | download"
-    )
-    ,
+    ),
     targets::tar_target(
       download_nlcd,
-      command= any(list.files("/set_targets/objects/", 
-                pattern = "^download_nlcd*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_nlcd*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
       description = "Download NLCD data | download"
-    )
-    ,
+    ),
     targets::tar_target(
       df_feat_calc_nlcd_params,
       command = expand.grid(
@@ -195,8 +216,7 @@ target_covariates <-
         split(seq_len(nrow(.))),
       iteration = "list",
       description = "NLCD features"
-    )
-    ,
+    ),
     targets::tar_target(
       list_feat_calc_nlcd,
       command = {
@@ -219,8 +239,7 @@ target_covariates <-
       iteration = "list",
       pattern = map(df_feat_calc_nlcd_params),
       description = "Calculate NLCD features | fit"
-    )
-    ,
+    ),
     targets::tar_target(
       name = dt_feat_calc_nlcd,
       command = list_feat_calc_nlcd %>%
@@ -228,12 +247,15 @@ target_covariates <-
         collapse::funique() %>%
         collapse::pivot(
           ids = c("AMA_SITE_CODE", "time"),
-          values = names(.)[!names(.) %in% c(
-            "AMA_SITE_CODE",
-            "time"
-          )]
+          values = names(.)[
+            !names(.) %in%
+              c(
+                "AMA_SITE_CODE",
+                "time"
+              )
+          ]
         ) %>%
-        .[!is.na(.[["value"]]),] %>%
+        .[!is.na(.[["value"]]), ] %>%
         collapse::pivot(
           ids = c("AMA_SITE_CODE", "time"),
           values = c("value"),
@@ -241,16 +263,29 @@ target_covariates <-
         ),
       description = "NLCD feature list (all dt) | fit"
     ),
-      ###########################      POPULATION      ###########################
-     targets::tar_target(
+    targets::tar_target(
+      nlcd_reduce,
+      command = reduce_correlated_variables(
+        dt = data.table::data.table(dt_feat_calc_nlcd),
+        cor_threshold = 0.89
+      ),
+      description = "NLCD collinearity reduction | fit"
+    ),
+    ###########################      POPULATION      ###########################
+    targets::tar_target(
       download_population,
-     # command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
-     #           pattern = "^download_population.*", full.names = TRUE)!= ""),
-      command= any(list.files("/set_targets/objects/", 
-                pattern = "^download_population.*", full.names = TRUE)!= ""),
+      # command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
+      #           pattern = "^download_population.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_population.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
       description = "check population data download"
-    )
-    ,
+    ),
     targets::tar_target(
       list_feat_calc_pop,
       command = {
@@ -276,22 +311,36 @@ target_covariates <-
       pattern = map(chr_iter_radii),
       iteration = "list",
       description = "Calculate population features | fit"
-    )
-    ,
+    ),
     targets::tar_target(
       dt_feat_calc_pop,
       command = beethoven::reduce_merge(
-        beethoven::reduce_list(list_feat_calc_pop),by=NULL
+        beethoven::reduce_list(list_feat_calc_pop),
+        by = NULL
       ),
       description = "data.table of population features | fit"
     ),
+    targets::tar_target(
+      pop_reduce,
+      command = reduce_correlated_variables(
+        dt = dt_feat_calc_pop,
+        cor_threshold = 0.89
+      ),
+      description = "Population collinearity reduction | fit"
+    ),
     ###########################        GROADS        ###########################
-     targets::tar_target(
+    targets::tar_target(
       download_groads,
       # command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
       #          pattern = "^download_groads.*", full.names = TRUE)!= ""),
-      command= any(list.files("/set_targets/objects/", 
-                pattern = "^download_groads.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_groads.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
       description = "check gRoads data download"
     ),
     targets::tar_target(
@@ -315,8 +364,7 @@ target_covariates <-
       iteration = "list",
       pattern = map(chr_iter_radii),
       description = "Calculate gRoads features | fit"
-    )
-    ,
+    ),
     targets::tar_target(
       dt_feat_calc_groads,
       command = beethoven::reduce_merge(
@@ -324,206 +372,279 @@ target_covariates <-
         by = c("AMA_SITE_CODE", "description")
       ),
       description = "data.table of gRoads features | fit"
-    ) ,
+    ),
+    targets::tar_target(
+      groads_reduce,
+      command = reduce_correlated_variables(
+        dt = dt_feat_calc_groads,
+        cor_threshold = 0.89
+      ),
+      description = "groads collinearity reduction | fit"
+    ),
     ###########################        KOPPEN        ###########################
     targets::tar_target(
       download_koppen,
       #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
       #          pattern = "^download_koppen.*", full.names = TRUE)!= ""),
-      command= any(list.files("/set_targets/objects/", 
-                pattern = "^download_koppen.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_koppen.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
       description = "Check Koppen-Geiger data download"
-    )
-    ,
+    ),
     targets::tar_target(
-    dt_feat_calc_koppen,
-    command = {
-      download_koppen
-      data.table::data.table(
-        amadeus::calculate_koppen_geiger(
-          from = amadeus::process_koppen_geiger(
-            path = file.path(
-              chr_input_dir,
-              "koppen_geiger",
-              "data_files",
-              "Beck_KG_V1_present_0p0083.tif"
-            )
-          ),
-          locs = haps_locs,
-          # NOTE: locs are all AQS sites for computational efficiency
-          locs_id = "AMA_SITE_CODE",
-          geom = FALSE
+      dt_feat_calc_koppen,
+      command = {
+        download_koppen
+        data.table::data.table(
+          amadeus::calculate_koppen_geiger(
+            from = amadeus::process_koppen_geiger(
+              path = file.path(
+                chr_input_dir,
+                "koppen_geiger",
+                "data_files",
+                "Beck_KG_V1_present_0p0083.tif"
+              )
+            ),
+            locs = haps_locs,
+            # NOTE: locs are all AQS sites for computational efficiency
+            locs_id = "AMA_SITE_CODE",
+            geom = FALSE
+          )
         )
-      )
-    },
-    description = "data.table of Koppen Geiger features | fit"
-  ),
-  ###########################         NEI          ###########################
+      },
+      description = "data.table of Koppen Geiger features | fit"
+    ),
+    targets::tar_target(
+      koppen_reduce,
+      command = reduce_correlated_variables(
+        dt = dt_feat_calc_koppen,
+        cor_threshold = 0.89
+      ),
+      description = "koppen collinearity reduction | fit"
+    ),
+    ###########################         NEI          ###########################
     targets::tar_target(
       chr_iter_calc_nei,
       command = c(2017, 2020),
       description = "NEI features | download"
-    )
-    ,
+    ),
     targets::tar_target(
       download_nei,
       #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
       #          pattern = "^download_nei.*", full.names = TRUE)!= ""),
-      command= any(list.files("/set_targets/objects/", 
-                pattern = "^download_nei.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_nei.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
       description = "Check NEI data download"
-    )
-    ,
+    ),
     targets::tar_target(
-    list_feat_calc_nei,
-    command = {
-      download_nei
-      beethoven::inject_calculate(
-        covariate = "nei",
-        locs = haps_locs,
-        injection = list(
-          domain = chr_iter_calc_nei,
-          domain_name = "year",
-          path = file.path(chr_input_dir, "nei", "data_files"),
-          covariate = "nei"
+      list_feat_calc_nei,
+      command = {
+        download_nei
+        beethoven::inject_calculate(
+          covariate = "nei",
+          locs = haps_locs,
+          injection = list(
+            domain = chr_iter_calc_nei,
+            domain_name = "year",
+            path = file.path(chr_input_dir, "nei", "data_files"),
+            covariate = "nei"
+          )
         )
-      )
-    },
-    iteration = "list",
-    pattern = map(chr_iter_calc_nei),
-    description = "Calculate NEI features | fit"
-  )
-  ,
-  targets::tar_target(
-    dt_feat_calc_nei,
-   # command = beethoven::reduce_merge(
-   #     beethoven::reduce_list(list_feat_calc_nei),by=NULL
-   #   ),
-    command = beethoven::reduce_list(
-      lapply(list_feat_calc_nei,function(x) data.table::data.table(beethoven::reduce_list(x)[[1]])))[[1]],
-    description = "data.table of NEI features | fit"
-  ),
-  ###########################         GMTED        ###########################
-  targets::tar_target(
-    chr_iter_calc_gmted_vars,
-    command = c(
-      "Breakline Emphasis", "Systematic Subsample",
-      "Median Statistic", "Minimum Statistic",
-      "Mean Statistic", "Maximum Statistic",
-      "Standard Deviation Statistic"
+      },
+      iteration = "list",
+      pattern = map(chr_iter_calc_nei),
+      description = "Calculate NEI features | fit"
     ),
-    description = "GMTED features | download"
-  )
-  ,
-  targets::tar_target(
-    download_gmted,
-    #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
-    #          pattern = "^download_gmted.*", full.names = TRUE)!= ""),
-    command= any(list.files("/set_targets/objects/", 
-              pattern = "^download_gmted.*", full.names = TRUE)!= ""),
-    pattern = map(chr_iter_calc_gmted_vars),
-    description = "Check GMTED data download"
-  )
-  ,
-  targets::tar_target(
-    chr_iter_calc_gmted_radii,
-    command = c(0, 1e3, 1e4),
-    description = "GMTED radii"
-  )
-  ,
-  targets::tar_target(
-    list_feat_calc_gmted,
-    command = {
-      download_gmted
-      beethoven::calc_gmted_direct(
-        variable = c(chr_iter_calc_gmted_vars, "7.5 arc-seconds"),
-        path = file.path(chr_input_dir, "gmted", "data_files"),
-        locs = haps_locs,
-        locs_id = "AMA_SITE_CODE",
-        radius = chr_iter_calc_gmted_radii
-      )
-    },
-    iteration = "list",
-    pattern = cross(
+    targets::tar_target(
+      dt_feat_calc_nei,
+      # command = beethoven::reduce_merge(
+      #     beethoven::reduce_list(list_feat_calc_nei),by=NULL
+      #   ),
+      command = beethoven::reduce_list(
+        lapply(
+          list_feat_calc_nei,
+          function(x) data.table::data.table(beethoven::reduce_list(x)[[1]])
+        )
+      )[[1]],
+      description = "data.table of NEI features | fit"
+    ),
+    targets::tar_target(
+      nei_reduce,
+      command = reduce_correlated_variables(
+        dt = dt_feat_calc_nei,
+        cor_threshold = 0.89,
+        noncovariate_cols = c(
+          "time",
+          "AMA_SITE_CODE",
+          "geoid",
+          "lon",
+          "lat",
+          "nei_year"
+        )
+      ),
+      description = "NEI collinearity reduction | fit"
+    ),
+    ###########################         GMTED        ###########################
+    targets::tar_target(
       chr_iter_calc_gmted_vars,
-      chr_iter_calc_gmted_radii
+      command = c(
+        "Breakline Emphasis",
+        "Systematic Subsample",
+        "Median Statistic",
+        "Minimum Statistic",
+        "Mean Statistic",
+        "Maximum Statistic",
+        "Standard Deviation Statistic"
+      ),
+      description = "GMTED features | download"
     ),
-    description = "Calculate GMTED features | fit"
-  )
-  ,
-  targets::tar_target(
-    dt_feat_calc_gmted,
-    command = beethoven::reduce_merge(
-      beethoven::reduce_list(list_feat_calc_gmted), by = "AMA_SITE_CODE"
+    targets::tar_target(
+      download_gmted,
+      #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
+      #          pattern = "^download_gmted.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_gmted.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
+      pattern = map(chr_iter_calc_gmted_vars),
+      description = "Check GMTED data download"
     ),
-    description = "data.table of GMTED features | fit"
-  ),
-  ###########################         HMS          ###########################
-  targets::tar_target(
-    download_hms,
-     #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
-    #          pattern = "^download_hms.*", full.names = TRUE)!= ""),
-    command= any(list.files("/set_targets/objects/", 
-              pattern = "^download_hms.*", full.names = TRUE)!= ""),
-    description = "Check HMS data download"
-  )
-  ,
-  targets::tar_target(
-    download_hms_buffer,
-    command = {
-      download_hms
-      TRUE
-    },
-    description = "Download HMS data | buffer | download"
-  )
-  ,
-  targets::tar_target(
-    list_feat_calc_hms,
-    command = {
-      download_hms_buffer
-      dt_iter_calc_hms <- beethoven::inject_calculate(
-        covariate = "hms",
-        locs = haps_locs,
-        injection = list(
+    targets::tar_target(
+      chr_iter_calc_gmted_radii,
+      command = c(0, 1e3, 1e4),
+      description = "GMTED radii"
+    ),
+    targets::tar_target(
+      list_feat_calc_gmted,
+      command = {
+        download_gmted
+        beethoven::calc_gmted_direct(
+          variable = c(chr_iter_calc_gmted_vars, "7.5 arc-seconds"),
+          path = file.path(chr_input_dir, "gmted", "data_files"),
+          locs = haps_locs,
           locs_id = "AMA_SITE_CODE",
-          path = file.path(chr_input_dir, "hms", "data_files"),
-          date = beethoven::fl_dates(unlist(list_dates)),
-          covariate = "hms"
+          radius = chr_iter_calc_gmted_radii
         )
-      )[[1]] |>
-        dplyr::select(-dplyr::any_of(c("lon", "lat", "geometry", "hms_year")))
-      beethoven::post_calc_cols(
-        dt_iter_calc_hms,
-        prefix = "HMS_",
-        skip=c("AMA_SITE_CODE", "time")
-      )
-    },
-    pattern = map(list_dates),
-    iteration = "list",
-    description = "Calculate HMS features | fit"     
-  )
-  ,
-  targets::tar_target(
-    dt_feat_calc_hms,
-    command = beethoven::reduce_list(list_feat_calc_hms)[[1]],
-    description = "data.table of HMS features | fit"
-  ),
-   ###########################         GEOS         ###########################
-   targets::tar_target(
+      },
+      iteration = "list",
+      pattern = cross(
+        chr_iter_calc_gmted_vars,
+        chr_iter_calc_gmted_radii
+      ),
+      description = "Calculate GMTED features | fit"
+    ),
+    targets::tar_target(
+      dt_feat_calc_gmted,
+      command = beethoven::reduce_merge(
+        beethoven::reduce_list(list_feat_calc_gmted),
+        by = "AMA_SITE_CODE"
+      ),
+      description = "data.table of GMTED features | fit"
+    ),
+    targets::tar_target(
+      gmted_reduce,
+      command = reduce_correlated_variables(
+        dt = dt_feat_calc_gmted,
+        cor_threshold = 0.89
+      ),
+      description = "GMTED collinearity reduction | fit"
+    ),
+    ###########################         HMS          ###########################
+    targets::tar_target(
+      download_hms,
+      #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
+      #          pattern = "^download_hms.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_hms.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
+      description = "Check HMS data download"
+    ),
+    targets::tar_target(
+      download_hms_buffer,
+      command = {
+        download_hms
+        TRUE
+      },
+      description = "Download HMS data | buffer | download"
+    ),
+    targets::tar_target(
+      list_feat_calc_hms,
+      command = {
+        download_hms_buffer
+        dt_iter_calc_hms <- beethoven::inject_calculate(
+          covariate = "hms",
+          locs = haps_locs,
+          injection = list(
+            locs_id = "AMA_SITE_CODE",
+            path = file.path(chr_input_dir, "hms", "data_files"),
+            date = beethoven::fl_dates(unlist(list_dates)),
+            covariate = "hms"
+          )
+        )[[1]] |>
+          dplyr::select(-dplyr::any_of(c("lon", "lat", "geometry", "hms_year")))
+        beethoven::post_calc_cols(
+          dt_iter_calc_hms,
+          prefix = "HMS_",
+          skip = c("AMA_SITE_CODE", "time")
+        )
+      },
+      pattern = map(list_dates),
+      iteration = "list",
+      description = "Calculate HMS features | fit"
+    ),
+    targets::tar_target(
+      dt_feat_calc_hms,
+      command = beethoven::reduce_list(list_feat_calc_hms)[[1]],
+      description = "data.table of HMS features | fit"
+    ),
+    targets::tar_target(
+      hms_reduce,
+      command = reduce_correlated_variables(
+        dt = dt_feat_calc_hms,
+        cor_threshold = 0.89
+      ),
+      description = "HMS collinearity reduction | fit"
+    ),
+    ###########################         GEOS         ###########################
+    targets::tar_target(
       chr_iter_calc_geos,
       command = c("aqc_tavg_1hr_g1440x721_v1", "chm_tavg_1hr_g1440x721_v1"),
       description = "GEOS-CF features | download"
-    )
-    ,
+    ),
     targets::tar_target(
-    download_geos,
-    #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
-    #          pattern = "^download_geos.*", full.names = TRUE)!= ""),
-    command= any(list.files("/set_targets/objects/", 
-              pattern = "^download_geos.*", full.names = TRUE)!= ""),
+      download_geos,
+      #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
+      #          pattern = "^download_geos.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_geos.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
       description = "Check GEOS-CF data download"
-    )
-    ,
+    ),
     targets::tar_target(
       download_geos_buffer,
       command = {
@@ -531,8 +652,7 @@ target_covariates <-
         TRUE
       },
       description = "Download GEOS-CF data | buffer | download"
-    )
-    ,
+    ),
     targets::tar_target(
       list_feat_calc_geos_aqc,
       command = {
@@ -550,8 +670,7 @@ target_covariates <-
       ),
       iteration = "list",
       description = "Calculate GEOS-CF features | aqc | fit"
-    )
-    ,
+    ),
     targets::tar_target(
       list_feat_calc_geos_chm,
       command = {
@@ -569,8 +688,7 @@ target_covariates <-
       ),
       iteration = "list",
       description = "Calculate GEOS-CF features | chm | fit"
-    )
-    ,
+    ),
     targets::tar_target(
       dt_feat_calc_geos,
       command = beethoven::reduce_merge(
@@ -582,45 +700,85 @@ target_covariates <-
       ),
       description = "data.table of GEOS-CF features | fit"
     ),
-  ###########################         NARR         ###########################
-    
+    targets::tar_target(
+      geos_reduce,
+      command = reduce_correlated_variables(
+        dt = dt_feat_calc_geos,
+        cor_threshold = 0.89
+      ),
+      description = "GEOS-CF collinearity reduction | fit"
+    ),
+    ###########################         NARR         ###########################
     targets::tar_target(
       chr_iter_calc_narr,
       command = c(
-        "air.sfc", "albedo", "apcp", "dswrf", "evap", "hcdc", "hpbl",
-        "lcdc", "lhtfl", "mcdc", "pr_wtr", "prate", "pres.sfc",
-        "shtfl", "snowc", "soilm", "tcdc", "ulwrf.sfc", "uwnd.10m",
-        "vis", "vwnd.10m", "weasd", "omega", "shum"
+        "air.sfc",
+        "albedo",
+        "apcp",
+        "dswrf",
+        "evap",
+        "hcdc",
+        "hpbl",
+        "lcdc",
+        "lhtfl",
+        "mcdc",
+        "pr_wtr",
+        "prate",
+        "pres.sfc",
+        "shtfl",
+        "snowc",
+        "soilm",
+        "tcdc",
+        "ulwrf.sfc",
+        "uwnd.10m",
+        "vis",
+        "vwnd.10m",
+        "weasd",
+        "omega",
+        "shum"
       ),
       description = "NARR features"
-    )
-    ,
+    ),
     targets::tar_target(
       chr_iter_calc_narr_lag,
       command = c(
-        "air.sfc", "apcp", "pres.sfc", "shum", "uwnd.10m", "vwnd.10m"
+        "air.sfc",
+        "apcp",
+        "pres.sfc",
+        "shum",
+        "uwnd.10m",
+        "vwnd.10m"
       ),
       description = "NARR features | lag"
-    )
-    ,
+    ),
     targets::tar_target(
       download_narr,
       #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
       #          pattern = "^download_narr.*", full.names = TRUE)!= ""),
-      command= any(list.files("/set_targets/objects/", 
-              pattern = "^download_narr.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_narr.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
       description = "Check NARR data download"
-    )
-    ,
+    ),
     targets::tar_target(
       download_narr_lag,
       #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
       #          pattern = "^download_narr_lag.*", full.names = TRUE)!= ""),
-      command= any(list.files("/set_targets/objects/", 
-              pattern = "^download_narr_lag.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_narr_lag.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
       description = "Download NARR data | lag | download"
-    )
-    ,
+    ),
     targets::tar_target(
       download_narr_buffer,
       command = {
@@ -629,8 +787,7 @@ target_covariates <-
         TRUE
       },
       description = "Download NARR data | buffer | download"
-    )
-    , 
+    ),
     targets::tar_target(
       list_feat_calc_narr,
       command = {
@@ -656,14 +813,13 @@ target_covariates <-
         beethoven::post_calc_cols(
           dt_iter_calc_narr,
           prefix = "NARR_0_",
-          skip=c("AMA_SITE_CODE", "time")
+          skip = c("AMA_SITE_CODE", "time")
         )
       },
       pattern = cross(list_dates, chr_iter_calc_narr),
       iteration = "list",
       description = "Calculate NARR features | nolag | fit"
-    )
-    ,
+    ),
     targets::tar_target(
       dt_feat_calc_narr_nolag,
       command = beethoven::reduce_merge(
@@ -671,8 +827,7 @@ target_covariates <-
         by = c("AMA_SITE_CODE", "time")
       ),
       description = "data.table of NARR features | nolag | fit"
-    )
-    ,
+    ),
     targets::tar_target(
       list_feat_calc_narr_lag,
       command = {
@@ -698,7 +853,7 @@ target_covariates <-
         dt_lag_calc_narr <- beethoven::post_calc_cols(
           dt_lag_calc_narr,
           prefix = "NARR_0_",
-          skip=c("AMA_SITE_CODE", "time")
+          skip = c("AMA_SITE_CODE", "time")
         )
         int_narr_cols <- which(
           names(dt_feat_calc_narr_nolag) %in% names(dt_lag_calc_narr)
@@ -717,8 +872,7 @@ target_covariates <-
       pattern = map(chr_iter_calc_narr_lag),
       iteration = "list",
       description = "Calculate NARR features | lag | fit"
-    )
-    ,
+    ),
     targets::tar_target(
       dt_feat_calc_narr,
       command = beethoven::reduce_merge(
@@ -729,16 +883,29 @@ target_covariates <-
       ),
       description = "data.table of NARR features | fit"
     ),
-   ###########################       MODIS - MOD11       ######################
+    targets::tar_target(
+      narr_reduce,
+      command = reduce_correlated_variables(
+        dt = dt_feat_calc_narr,
+        cor_threshold = 0.89
+      ),
+      description = "NARR collinearity reduction | fit"
+    ),
+    ###########################       MODIS - MOD11       ######################
     targets::tar_target(
       download_mod11,
       #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
       #          pattern = "^download_mod11.*", full.names = TRUE)!= ""),
-      command= any(list.files("/set_targets/objects/", 
-              pattern = "^download_mod11.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_mod11.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
       description = "check MODIS - MOD11 data download"
-    )
-    ,
+    ),
     targets::tar_target(
       chr_args_calc_mod11_files,
       command = {
@@ -750,15 +917,16 @@ target_covariates <-
         )
       },
       description = "MODIS - MOD11 files"
-    )
-    ,
+    ),
     targets::tar_target(
       list_args_calc_mod11,
       command = list(
         from = grep(
           x = chr_args_calc_mod11_files,
           pattern = paste0(
-            "MOD11A1.A", unlist(list_dates_julian), collapse = "|"
+            "MOD11A1.A",
+            unlist(list_dates_julian),
+            collapse = "|"
           ),
           value = TRUE
         ),
@@ -769,17 +937,18 @@ target_covariates <-
       pattern = map(list_dates_julian),
       iteration = "list",
       description = "MODIS - MOD11 arguments"
-    )
-    ,
+    ),
     targets::tar_target(
       list_feat_calc_mod11,
       command = rlang::inject(
-        do.call(amadeus::calculate_modis, 
-        c(list(locs = haps_locs, 
-        locs_id = "AMA_SITE_CODE"), 
-        list_args_calc_mod11)
+        do.call(
+          amadeus::calculate_modis,
+          c(
+            list(locs = haps_locs, locs_id = "AMA_SITE_CODE"),
+            list_args_calc_mod11
+          )
         )
-        ),
+      ),
       pattern = map(list_args_calc_mod11),
       iteration = "list",
       resources = targets::tar_resources(
@@ -792,11 +961,16 @@ target_covariates <-
       download_mod06,
       #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
       #          pattern = "^download_mod06.*", full.names = TRUE)!= ""),
-      command= any(list.files("/set_targets/objects/", 
-              pattern = "^download_mod06.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_mod06.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
       description = "Download MODIS - MOD06 data | download"
-    )
-    ,
+    ),
     targets::tar_target(
       chr_args_calc_mod06_files,
       command = {
@@ -808,15 +982,16 @@ target_covariates <-
         )
       },
       description = "MODIS - MOD06 files"
-    )
-    ,
+    ),
     targets::tar_target(
       list_args_calc_mod06,
       command = list(
         from = grep(
           x = chr_args_calc_mod06_files,
           pattern = paste0(
-            "MOD06_L2.A", unlist(list_dates_julian), collapse = "|"
+            "MOD06_L2.A",
+            unlist(list_dates_julian),
+            collapse = "|"
           ),
           value = TRUE
         ),
@@ -828,35 +1003,40 @@ target_covariates <-
       pattern = map(list_dates_julian),
       iteration = "list",
       description = "MODIS - MOD06 arguments"
-    )
-    ,
+    ),
     targets::tar_target(
       list_feat_calc_mod06,
-    command = rlang::inject(
-        do.call(amadeus::calculate_modis, 
-        c(list(locs = haps_locs, 
-        locs_id = "AMA_SITE_CODE"), 
-        list_args_calc_mod06)
+      command = rlang::inject(
+        do.call(
+          amadeus::calculate_modis,
+          c(
+            list(locs = haps_locs, locs_id = "AMA_SITE_CODE"),
+            list_args_calc_mod06
+          )
         )
-        ),
+      ),
       pattern = map(list_args_calc_mod06),
       iteration = "list",
       resources = targets::tar_resources(
         crew = targets::tar_resources_crew(controller = "controller_50")
       ),
       description = "Calculate MODIS - MOD06 features | fit"
-    )
-    ,
+    ),
     ###########################       MODIS - MOD13       ######################
     targets::tar_target(
       download_mod13,
       #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
       #          pattern = "^download_mod13.*", full.names = TRUE)!= ""),
-      command= any(list.files("/set_targets/objects/", 
-              pattern = "^download_mod13.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_mod13.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
       description = "Download MODIS - MOD13 data | download"
-    )
-    ,
+    ),
     targets::tar_target(
       chr_args_calc_mod13_files,
       command = {
@@ -868,15 +1048,16 @@ target_covariates <-
         )
       },
       description = "MODIS - MOD13 files"
-    )
-    ,
+    ),
     targets::tar_target(
       list_args_calc_mod13,
       command = list(
         from = grep(
           x = chr_args_calc_mod13_files,
           pattern = paste0(
-            "MOD13A2.A", unlist(list_dates_julian), collapse = "|"
+            "MOD13A2.A",
+            unlist(list_dates_julian),
+            collapse = "|"
           ),
           value = TRUE
         ),
@@ -887,35 +1068,40 @@ target_covariates <-
       pattern = map(list_dates_julian),
       iteration = "list",
       description = "MODIS - MOD13 arguments"
-    )
-    ,
+    ),
     targets::tar_target(
       list_feat_calc_mod13,
       command = rlang::inject(
-        do.call(amadeus::calculate_modis, 
-        c(list(locs = haps_locs, 
-        locs_id = "AMA_SITE_CODE"), 
-        list_args_calc_mod13)
+        do.call(
+          amadeus::calculate_modis,
+          c(
+            list(locs = haps_locs, locs_id = "AMA_SITE_CODE"),
+            list_args_calc_mod13
+          )
         )
-        ),
+      ),
       pattern = map(list_args_calc_mod13),
       iteration = "list",
       resources = targets::tar_resources(
         crew = targets::tar_resources_crew(controller = "controller_100")
       ),
       description = "Calculate MODIS - MOD13 features | fit"
-    )
-    ,
+    ),
     ###########################     MODIS - MCD19_1km     ######################
     targets::tar_target(
       download_mcd19,
       #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
       #          pattern = "^download_mcd19.*", full.names = TRUE)!= ""),
-      command= any(list.files("/set_targets/objects/", 
-              pattern = "^download_mcd19.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_mcd19.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
       description = "Download MODIS - MCD19 data | download"
-    )
-    ,
+    ),
     targets::tar_target(
       chr_args_calc_mcd19_files,
       command = {
@@ -927,15 +1113,16 @@ target_covariates <-
         )
       },
       description = "MODIS - MCD19_*km files"
-    )
-    ,
+    ),
     targets::tar_target(
       list_args_calc_mcd19_1km,
       command = list(
         from = grep(
           x = chr_args_calc_mcd19_files,
           pattern = paste0(
-            "MCD19A2.A", unlist(list_dates_julian), collapse = "|"
+            "MCD19A2.A",
+            unlist(list_dates_julian),
+            collapse = "|"
           ),
           value = TRUE
         ),
@@ -946,25 +1133,25 @@ target_covariates <-
       pattern = map(list_dates_julian),
       iteration = "list",
       description = "MODIS - MCD19_1km arguments"
-    )
-    ,
+    ),
     targets::tar_target(
       list_feat_calc_mcd19_1km,
-     command = rlang::inject(
-        do.call(amadeus::calculate_modis, 
-        c(list(locs = haps_locs, 
-        locs_id = "AMA_SITE_CODE"), 
-        list_args_calc_mcd19_1km)
+      command = rlang::inject(
+        do.call(
+          amadeus::calculate_modis,
+          c(
+            list(locs = haps_locs, locs_id = "AMA_SITE_CODE"),
+            list_args_calc_mcd19_1km
+          )
         )
-        ),
+      ),
       pattern = map(list_args_calc_mcd19_1km),
       iteration = "list",
       resources = targets::tar_resources(
         crew = targets::tar_resources_crew(controller = "controller_250")
       ),
       description = "Calculate MODIS - MCD19_1km features | fit"
-    )
-    ,
+    ),
     ###########################     MODIS - MCD19_5km     ######################
     targets::tar_target(
       list_args_calc_mcd19_5km,
@@ -972,13 +1159,18 @@ target_covariates <-
         from = grep(
           x = chr_args_calc_mcd19_files,
           pattern = paste0(
-            "MCD19A2.A", unlist(list_dates_julian), collapse = "|"
+            "MCD19A2.A",
+            unlist(list_dates_julian),
+            collapse = "|"
           ),
           value = TRUE
         ),
         name_covariates = c(
-          "MOD_CSZAN_0_", "MOD_CVZAN_0_", "MOD_RAZAN_0_",
-          "MOD_SCTAN_0_", "MOD_GLNAN_0_"
+          "MOD_CSZAN_0_",
+          "MOD_CVZAN_0_",
+          "MOD_RAZAN_0_",
+          "MOD_SCTAN_0_",
+          "MOD_GLNAN_0_"
         ),
         subdataset = "cos|RelAZ|Angle",
         radius = chr_iter_radii
@@ -986,35 +1178,40 @@ target_covariates <-
       pattern = map(list_dates_julian),
       iteration = "list",
       description = "MODIS - MCD19_5km arguments"
-    )
-    ,
+    ),
     targets::tar_target(
       list_feat_calc_mcd19_5km,
-     command = rlang::inject(
-        do.call(amadeus::calculate_modis, 
-        c(list(locs = haps_locs, 
-        locs_id = "AMA_SITE_CODE"), 
-        list_args_calc_mcd19_5km)
+      command = rlang::inject(
+        do.call(
+          amadeus::calculate_modis,
+          c(
+            list(locs = haps_locs, locs_id = "AMA_SITE_CODE"),
+            list_args_calc_mcd19_5km
+          )
         )
-        ),
+      ),
       pattern = map(list_args_calc_mcd19_5km),
       iteration = "list",
       resources = targets::tar_resources(
         crew = targets::tar_resources_crew(controller = "controller_250")
       ),
       description = "Calculate MODIS - MCD19_5km features | fit"
-    )
-    ,
+    ),
     ###########################       MODIS - MOD09       ######################
     targets::tar_target(
       download_mod09,
       #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
       #          pattern = "^download_mod09.*", full.names = TRUE)!= ""),
-      command= any(list.files("/set_targets/objects/", 
-              pattern = "^download_mod09.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_mod09.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
       description = "Download MODIS - MOD09 data | download"
-    )
-    ,
+    ),
     targets::tar_target(
       chr_args_calc_mod09_files,
       command = {
@@ -1026,21 +1223,27 @@ target_covariates <-
         )
       },
       description = "MODIS - MOD09 files"
-    )
-    ,
+    ),
     targets::tar_target(
       list_args_calc_mod09,
       command = list(
         from = grep(
           x = chr_args_calc_mod09_files,
           pattern = paste0(
-            "MOD09GA.A", unlist(list_dates_julian), collapse = "|"
+            "MOD09GA.A",
+            unlist(list_dates_julian),
+            collapse = "|"
           ),
           value = TRUE
         ),
         name_covariates = c(
-          "MOD_SFCRF_1_", "MOD_SFCRF_2_", "MOD_SFCRF_3_", "MOD_SFCRF_4_",
-          "MOD_SFCRF_5_", "MOD_SFCRF_6_", "MOD_SFCRF_7_"
+          "MOD_SFCRF_1_",
+          "MOD_SFCRF_2_",
+          "MOD_SFCRF_3_",
+          "MOD_SFCRF_4_",
+          "MOD_SFCRF_5_",
+          "MOD_SFCRF_6_",
+          "MOD_SFCRF_7_"
         ),
         subdataset = "^sur_refl_",
         radius = chr_iter_radii
@@ -1048,35 +1251,40 @@ target_covariates <-
       pattern = map(list_dates_julian),
       iteration = "list",
       description = "MODIS - MOD09 arguments"
-    )
-    ,
+    ),
     targets::tar_target(
       list_feat_calc_mod09,
       command = rlang::inject(
-        do.call(amadeus::calculate_modis, 
-        c(list(locs = haps_locs, 
-        locs_id = "AMA_SITE_CODE"), 
-        list_args_calc_mod09)
+        do.call(
+          amadeus::calculate_modis,
+          c(
+            list(locs = haps_locs, locs_id = "AMA_SITE_CODE"),
+            list_args_calc_mod09
+          )
         )
-        ),
+      ),
       pattern = map(list_args_calc_mod09),
       iteration = "list",
       resources = targets::tar_resources(
         crew = targets::tar_resources_crew(controller = "controller_25")
       ),
       description = "Calculate MODIS - MOD09 features | fit"
-    )
-    ,
+    ),
     ###########################       MODIS - VIIRS       ######################
     targets::tar_target(
       download_viirs,
       #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects/",
       #          pattern = "^download_viirs.*", full.names = TRUE)!= ""),
-      command= any(list.files("/set_targets/objects/", 
-              pattern = "^download_viirs.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_viirs.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
       description = "Download MODIS - VIIRS data | download"
-    )
-    ,
+    ),
     targets::tar_target(
       chr_args_calc_viirs_files,
       command = {
@@ -1088,15 +1296,16 @@ target_covariates <-
         )
       },
       description = "MODIS - VIIRS files"
-    )
-    ,
+    ),
     targets::tar_target(
       list_args_calc_viirs,
       command = list(
         from = grep(
           x = chr_args_calc_viirs_files,
           pattern = paste0(
-            "VNP46A2.A", unlist(list_dates_julian), collapse = "|"
+            "VNP46A2.A",
+            unlist(list_dates_julian),
+            collapse = "|"
           ),
           value = TRUE
         ),
@@ -1108,25 +1317,25 @@ target_covariates <-
       pattern = map(list_dates_julian),
       iteration = "list",
       description = "MODIS - VIIRS arguments"
-    )
-    ,
+    ),
     targets::tar_target(
       list_feat_calc_viirs,
       command = rlang::inject(
-        do.call(amadeus::calculate_modis, 
-        c(list(locs = haps_locs, 
-        locs_id = "AMA_SITE_CODE"), 
-        list_args_calc_viirs)
+        do.call(
+          amadeus::calculate_modis,
+          c(
+            list(locs = haps_locs, locs_id = "AMA_SITE_CODE"),
+            list_args_calc_viirs
+          )
         )
-        ),
+      ),
       pattern = map(list_args_calc_viirs),
       iteration = "list",
       resources = targets::tar_resources(
         crew = targets::tar_resources_crew(controller = "controller_100")
       ),
       description = "Calculate MODIS - VIIRS features | fit"
-    )
-    ,
+    ),
     ###########################        MODIS/VIIRS        ######################
     targets::tar_target(
       dt_feat_calc_nasa,
@@ -1147,33 +1356,40 @@ target_covariates <-
       ),
       description = "data.table of MODIS/VIIRS features | fit"
     ),
-  ########################       DATE FEATURES       #########################
+    targets::tar_target(
+      nasa_reduce,
+      command = reduce_correlated_variables(
+        dt = dt_feat_calc_nasa,
+        cor_threshold = 0.89
+      ),
+      description = "MODIS/VIIRS collinearity reduction | fit"
+    ),
+    ########################       DATE FEATURES       #########################
     targets::tar_target(
       dt_feat_calc_date,
       command = Reduce(
         post_calc_autojoin2,
         list(
           #gmet_cleanup,
-          dt_feat_calc_geos,
-          dt_feat_calc_narr,
-          dt_feat_calc_nasa
+          geos_reduce,
+          narr_reduce,
+          nasa_reduce
         )
       ),
       description = "data.table of all features | fit"
-    )
-    ,
-  ########################       BASE FEATURES       #########################
+    ),
+    ########################       BASE FEATURES       #########################
     targets::tar_target(
       list_feat_calc_base_flat,
       command = lapply(
         list(
-          list(dt_feat_calc_hms),
+          list(hms_reduce),
           list(dt_feat_calc_tri),
-          list(dt_feat_calc_nei),
-          list(dt_feat_calc_ecoregions),
-          list(dt_feat_calc_koppen),
-          list(dt_feat_calc_pop),
-          list(dt_feat_calc_groads)
+          list(nei_reduce),
+          list(ecoregions_reduce),
+          list(koppen_reduce),
+          list(pop_reduce),
+          list(groads_reduce)
         ),
         function(x) {
           if (length(x) == 1) {
@@ -1199,8 +1415,7 @@ target_covariates <-
         }
       ),
       description = "Calculated base feature list (all dt) | fit"
-    )
-    ,
+    ),
     targets::tar_target(
       dt_feat_calc_base,
       command = Reduce(
@@ -1208,13 +1423,13 @@ target_covariates <-
         c(
           list(process),
           list_feat_calc_base_flat,
-          list(dt_feat_calc_gmted),
-          list(data.table::data.table(dt_feat_calc_nlcd))
+          list(gmted_reduce),
+          list(nlcd_reduce)
         )
       ),
       description = "Base features with PM2.5 | fit"
-   ),
-#######################     CUMULATIVE FEATURES      #######################
+    ),
+    #######################     CUMULATIVE FEATURES      #######################
     targets::tar_target(
       dt_feat_calc_design,
       command = post_calc_autojoin2(
@@ -1225,7 +1440,6 @@ target_covariates <-
       ),
       description = "data.table of all features with PM2.5 | fit"
     ),
-  
     targets::tar_target(
       dt_feat_calc_imputed,
       command = impute_all2(
@@ -1236,36 +1450,41 @@ target_covariates <-
         nthreads_imputation = 32
       ),
       description = "Imputed features + lags | fit"
-    )
-    ,
+    ),
     targets::tar_target(
       name = dt_feat_calc_xyt,
       command = data.table::data.table(
         beethoven::attach_xy(
           dt_feat_calc_imputed,
           haps_locs,
-          locs_id ="AMA_SITE_CODE"
+          locs_id = "AMA_SITE_CODE"
         )
       ),
       description = "Imputed features + AQS sites (outcome and lat/lon) | fit"
     ),
-
-#######################     FILTER TO STATE      #######################
-  target_covariates_nc <-
-  list(
     targets::tar_target(
-      haps_locs_nc,
-      command = select_states(locs=haps_locs,state_list=c("Texas")),
-      description="Extract NC locations"
-     )
-     ,
-    targets::tar_target(
-        covariates_nc,
-        command=dt_feat_calc_xyt %>% filter(AMA_SITE_CODE %in% haps_locs_nc$AMA_SITE_CODE),
-        description="Filter NC covariates"
-    )
+      xyt_reduce,
+      command = reduce_correlated_variables(
+        dt = dt_feat_calc_xyt,
+        cor_threshold = 0.89,
+        noncovariate_cols = c(vars, "time", "lon", "lat")
+      ),
+      description = "Final covariate collinearity reduction | fit"
+    ),
+    #######################     FILTER TO STATE      #######################
+    target_covariates_nc <-
+      list(
+        targets::tar_target(
+          haps_locs_nc,
+          command = select_states(locs = haps_locs, state_list = c("Texas")),
+          description = "Extract NC locations"
+        ),
+        targets::tar_target(
+          covariates_nc,
+          command = xyt_reduce %>%
+            filter(AMA_SITE_CODE %in% haps_locs_nc$AMA_SITE_CODE),
+          description = "Filter NC covariates"
+        )
+      )
   )
-  
-
-  )
-  #nolint end
+#nolint end
