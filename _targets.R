@@ -117,6 +117,7 @@ tar_source("R/post_calc_autojoin2.R")
 tar_source("R/impute_all2.R")
 tar_source("R/gridmet_cleanup.R")
 tar_source("R/pgp_preprocessing.R")
+tar_source("R/kriging_funs.R")
 
 ###########################      SOURCE TARGETS      ###########################
 targets::tar_source("inst/targets/targets_critical.R")
@@ -125,13 +126,15 @@ targets::tar_source("inst/targets/targets_haps.R")
 targets::tar_source("inst/targets/targets_covariates.R")
 targets::tar_source("inst/targets/targets_covariates_predgrid.R")
 targets::tar_source("inst/targets/targets_fit.R")
+targets::tar_source("inst/targets/targets_soil_example.R")
 
 ##############################      PIPELINE      ##############################
 list(
-  target_critical,
-  target_initiate,
-  target_haps,
-  target_covariates,
-  #target_covariates_predgrid,
-  target_fit
+  # target_critical,
+  # target_initiate,
+  # target_haps,
+  # target_covariates,
+  # #target_covariates_predgrid,
+  # target_fit,
+  target_soil_example
 )
