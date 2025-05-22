@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=HAPSGP_container
-#SBATCH --partition=geo
-#SBATCH --mem=100G
-#SBATCH --cpus-per-task=50
+#SBATCH --partition=highmem
+#SBATCH --mem=1000G
+#SBATCH --cpus-per-task=32
 #SBATCH --ntasks-per-node=1
 #SBATCH --nodes=1
-#SBATCH --output=slurm_messages/runHAPSGP_%j.out
-#SBATCH --error=slurm_messages/runHAPSGP_%j.err
+#SBATCH --output=slurm_messages/HAPSGP_%j.out
+#SBATCH --error=slurm_messages/HAPSGP_%j.err
 #SBATCH --mail-user=kyle.messier@nih.gov
 #SBATCH --mail-type=ALL
 

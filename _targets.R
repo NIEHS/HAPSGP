@@ -21,6 +21,8 @@ library(spatialsample)
 library(sf)
 library(Metrics)
 library(tigris)
+library(fields)
+library(gtools)
 
 ################################################################################
 #############################      CONTROLLER      #############################
@@ -77,7 +79,9 @@ tar_option_set(
     "spatialsample",
     "sf",
     "Metrics",
-    "tigris"
+    "tigris",
+    "fields",
+    "gtools"
   ),
   #format = "qs",
   controller = crew::crew_controller_group(
@@ -89,7 +93,7 @@ tar_option_set(
     controller_1
   ),
   resources = targets::tar_resources(
-    crew = targets::tar_resources_crew(controller = "controller_250")
+    crew = targets::tar_resources_crew(controller = "controller_50")
   ),
   garbage_collection = 100,
   storage = "worker",
