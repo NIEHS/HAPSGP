@@ -118,6 +118,8 @@ tar_source("R/impute_all2.R")
 tar_source("R/gridmet_cleanup.R")
 tar_source("R/pgp_preprocessing.R")
 tar_source("R/reduce_correlated_variables.R")
+tar_source("R/process_edgar.R")
+tar_source("R/calculate_edgar.R")
 
 ###########################      SOURCE TARGETS      ###########################
 targets::tar_source("inst/targets/targets_critical.R")
@@ -132,7 +134,7 @@ list(
   target_critical,
   target_initiate,
   target_haps,
-  target_covariates,
+  target_covariates #,
   #target_covariates_predgrid,
-  target_fit
+  #target_fit
 )

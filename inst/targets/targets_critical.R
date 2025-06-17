@@ -13,10 +13,9 @@ target_critical <-
     #####    chr_daterange.
     targets::tar_target(
       chr_daterange,
-      command = c("2021-01-01", "2021-12-31"),
+      command = c("2018-01-01", "2021-12-31"),
       description = "Date range | critical"
-    )
-    ,
+    ),
     ##### 2. chr_nasa_token sets the file path to the user's NASA Earthdata
     #####    account credentials. We can create a group credential file,
     #####    but this target is still critical since the CREDENTIALS
@@ -26,8 +25,7 @@ target_critical <-
       chr_nasa_token,
       command = readLines("/inst/extdata/nasa_token.txt"),
       description = "NASA Earthdata token | critical"
-    )
-    ,
+    ),
     ##### 3. chr_mod06_links is the file path to the MOD06 links file. These
     #####    links must be manually downloaded per the `amadeus::download_modis`
     #####    function. The links are then stored in a CSV file that is read
@@ -37,9 +35,8 @@ target_critical <-
       chr_mod06_links,
       #command = "/ddn/gs1/home/kassienma/beethoven/inst/extdata/mod06_links_2018_2022.csv",
       command = "/beethoven/inst/extdata/mod06_links_2018_2022.csv",
-     description = "File of MOD06 links | critical"
-    )
-    ,
+      description = "File of MOD06 links | critical"
+    ),
     ##### 4. chr_input_dir is the file path to the input directory. This target
     #####    controls where the raw data files are downloaded to and imported
     #####    from. This file path **MUST** be mounted to the container at run
@@ -49,8 +46,7 @@ target_critical <-
       #command = "/ddn/gs1/group/set/Projects/NRT-AP-Model/input",
       command = "/set_input/",
       description = "Data directory | critical"
-    )
-    ,
+    ),
     ##### 5. chr_dates_split controls the size of temporal splits. Splitting the
     #####    temporal range into smaller chunks allows for parallel processing
     #####    across multiple workers. It also allows for dispatching new dynamic
@@ -63,48 +59,79 @@ target_critical <-
 
     targets::tar_target(
       model_dates,
-      command = seq(as.Date(chr_daterange[1]), as.Date(chr_daterange[2]), "day"), 
+      command = seq(
+        as.Date(chr_daterange[1]),
+        as.Date(chr_daterange[2]),
+        "day"
+      ),
       description = "Model date sequence"
-    )
-    ,
-     targets::tar_target(
+    ),
+    targets::tar_target(
       pred_dates,
-       command = seq(as.Date(chr_daterange[1]), as.Date(chr_daterange[2]), "day"), 
-        description = "prediction dates"
-    )
-    ,
+      command = seq(
+        as.Date(chr_daterange[1]),
+        as.Date(chr_daterange[2]),
+        "day"
+      ),
+      description = "prediction dates"
+    ),
     targets::tar_target(
       data.dir,
       #command = "/ddn/gs1/home/kassienma/HAPSGP/input/",
       command = "/input/",
       description = "Input directory"
-    )
-    ,
+    ),
     targets::tar_target(
       amayr,
       command = 2021,
       description = "AMA year"
-    )
-    ,
+    ),
     targets::tar_target(
       allyears,
-      command = unique(format.Date(model_dates,"%Y")),
+      command = unique(format.Date(model_dates, "%Y")),
       description = "Model years"
-    )
-    ,
+    ),
     targets::tar_target(
       chemlist,
-      command = c("Benzene","Hexane"),
+      command = c("Benzene", "Hexane"),
       description = "Chemical list"
-    )
-    ,
+    ),
     targets::tar_target(
       vars,
-      command = c("AMA_SITE_CODE","AQS_PARAMETER_NAME",
-      "AQS_PARAMETER_CODE", "DURATION_DESC","CONC_DAILY_UG_M3",
-      "CONC_DAILY_STD","MDL_DAILY_STD_UG_M3","ALTERNATE_MDL_DAILY",
-      "SAMPLING_FREQUENCY_DAILY","POC_COUNT","ZERO_COUNT"),
+      command = c(
+        "AMA_SITE_CODE",
+        "AQS_PARAMETER_NAME",
+        "AQS_PARAMETER_CODE",
+        "DURATION_DESC",
+        "CONC_DAILY_UG_M3",
+        "CONC_DAILY_STD",
+        "MDL_DAILY_STD_UG_M3",
+        "ALTERNATE_MDL_DAILY",
+        "SAMPLING_FREQUENCY_DAILY",
+        "POC_COUNT",
+        "ZERO_COUNT"
+      ),
       description = "vars of interest"
+    ),
+    targets::tar_target(
+      haps_metadata,
+      command = {
+        load(paste0(data.dir, "AMA_SITE_INFORMATION.Rda"))
+        return(AMA_SITE_INFORMATION)
+      },
+      description = "AMA metadata file"
+    ),
+    targets::tar_target(
+      list_download_args,
+      command = list(
+        unzip = TRUE,
+        remove_zip = FALSE,
+        remove_command = TRUE,
+        acknowledgement = TRUE,
+        download = TRUE,
+        hash = FALSE
+      ),
+      description = "Common download arguments | download"
     )
     ############################################################################
     ############################################################################
