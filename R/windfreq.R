@@ -2,7 +2,8 @@
 #' @description
 #' The \code{windfreq()} function bins wind speed and wind direction into
 #' specified intervals, computes the frequency or fraction of observations
-#' in each bin, and returns the results in either table or data frame format.
+#' in each bin and returns the results in either table or data frame format,
+#' and optionally computes results by group (e.g., site ID).
 #' @param mydata A data frame containing wind speed and wind direction data.
 #' @param ws_col Character. Name of the column in `mydata` that contains
 #' wind speed values.
@@ -16,106 +17,134 @@
 #' @param statistic Character. Specifies whether to return
 #' absolute counts (`"count"`) or relative frequencies (`"fraction"`).
 #' Default is `"count"`.
+#' @param locs_id Optional character. Name of column in `mydata` for group ID (e.g., site).
+#'
 #' @param format Character. Output format: `"data.frame"` (default) or `"table"`.
 #' @returns A frequency table of wind speed and direction bins, either as
-#' a data frame or a table.
+#' a data frame or a table, with optional grouping.
 #' @examples
-#' # Example dataset
-#' set.seed(123)
-#' mydata <- data.frame(wind_speed = runif(100, 0, 20), wind_dir = runif(100, 0, 360))
 #'
-#' # Compute wind frequency table
-#' windfreq(mydata, ws_col = "wind_speed", wd_col = "wind_dir", ws.int = 5, wd.int = 8, 
-#'          calm.thres = 0.5, statistic = "count", format = "data.frame")
+#' mydata <- data.frame(
+#'   site = rep(c("A", "B"), each = 100),
+#'   ws = runif(200, 0, 15),
+#'   wd = runif(200, 0, 360)
+#' )
+#' windfreq(mydata, ws_col = "ws", wd_col = "wd", ws.int = 5, wd.int = 8,
+#' calm.thres = 0.5, statistic = "count", format = "data.frame", locs_id = "site")
 #' @export
-# nolint start
-windfreq <- function(mydata, ws_col, wd_col, ws.int, wd.int, calm.thres = 0, 
-                     statistic = c("count", "fraction"), format = c("data.frame", "table")) {
-  
-  # Ensure valid statistic and format arguments
+windfreq <- function(
+  mydata,
+  ws_col,
+  wd_col,
+  ws.int,
+  wd.int,
+  calm.thres = 0,
+  statistic = c("count", "fraction"),
+  format = c("data.frame", "table"),
+  locs_id = NULL
+) {
   statistic <- match.arg(statistic)
   format <- match.arg(format)
-  
-  # Ensure specified columns exist in mydata
-  if (!(ws_col %in% colnames(mydata))) stop("Error: Column '", ws_col, "' not found in mydata.")
-  if (!(wd_col %in% colnames(mydata))) stop("Error: Column '", wd_col, "' not found in mydata.")
-  
-  # Extract wind speed and direction
-  ws <- mydata[[ws_col]]
-  wd <- mydata[[wd_col]]
-  
-  # 1. Define wind speed bins dynamically based on ws.int
-  max_ws <- max(ws, na.rm = TRUE)  # Get the maximum wind speed value
-  
-  # Calculate wind speed bin edges
-  ws_bins <- seq(0, max_ws, by = ws.int)
-  if (ws_bins[length(ws_bins)] < max_ws) {
-    ws_bins <- c(ws_bins, max_ws)  # Append max_ws if not included
-  }
-  
-  # Add a calm bin if applicable
-  ws_bins <- c(0, calm.thres[calm.thres > 0], ws_bins[ws_bins > calm.thres])
-  
-  # Create wind speed labels with interval notation
-  ws_labels <- paste0("[", head(ws_bins, -1), "-", tail(ws_bins, -1), ")")
-  
-  # 2. Define wind direction bins based on wd.int
 
-  # Ensure wd.int is a divisor of 360
-  if (360 %% wd.int != 0) {
-    original_wd_int <- wd.int
-    
-    # Find the next largest divisor of 360
-    possible_divisors <- seq(wd.int, 360, by = 1)
-    wd.int <- min(possible_divisors[360 %% possible_divisors == 0])
-    
-    # Print a warning if adjustment was made
-    message("Warning: wd.int = ", original_wd_int, 
-            " is not a divisor of 360. Adjusting to wd.int = ", wd.int, " for even binning.")
+  if (!(ws_col %in% names(mydata))) {
+    stop("Column ", ws_col, " not found in mydata.")
+  }
+  if (!(wd_col %in% names(mydata))) {
+    stop("Column ", wd_col, " not found in mydata.")
+  }
+  if (!is.null(locs_id) && !(locs_id %in% names(mydata))) {
+    stop("Column ", locs_id, " not found in mydata.")
   }
 
-  # Calculate the bin width
-  wd_bin_width <- 360 / wd.int
+  # Helper function to process one group (or entire dataset if locs_id is NULL)
 
-  # Shift bins to center on cardinal directions (N, E, S, W)
-  # Example: For 4 bins, we want centers at 0, 90, 180, 270
-  wd_centers <- seq(0, 360 - wd_bin_width, length.out = wd.int)
+  process_one <- function(subset_data) {
+    ws <- subset_data[[ws_col]]
+    wd <- subset_data[[wd_col]]
 
-  # Shift the bin edges to center on these points
-  # Each bin spans half the bin width on either side of the center
-  wd_bins <- (wd_centers - wd_bin_width / 2) %% 360
+    # Return NA row if wind speed or direction is missing entirely
+    if (all(is.na(ws)) || all(is.na(wd))) {
+      freq_table <- data.frame(ws_bin = NA, wd_bin = NA, freq = NA)
+      if (!is.null(locs_id)) {
+        freq_table[[locs_id]] <- unique(subset_data[[locs_id]])
+        freq_table <- freq_table[, c(locs_id, "ws_bin", "wd_bin", "freq")]
+      }
+    } else {
+      max_ws <- max(ws, na.rm = TRUE)
+      ws_bins <- seq(0, max_ws, by = ws.int)
+      if (ws_bins[length(ws_bins)] < max_ws) {
+        ws_bins <- c(ws_bins, max_ws)
+      }
+      if (calm.thres == 0 && !0 %in% ws_bins) {
+        ws_bins <- sort(unique(c(0, ws_bins)))
+      }
+      if (calm.thres > 0) {
+        ws_bins <- sort(unique(c(0, calm.thres, ws_bins[ws_bins > calm.thres])))
+      }
+      ws_labels <- paste0("[", head(ws_bins, -1), "-", tail(ws_bins, -1), ")")
 
-  # Ensure the bins wrap correctly
-  wd_bins <- sort(c(wd_bins, 360))
+      if (360 %% wd.int != 0) {
+        original_wd_int <- wd.int
+        wd.int <- min(seq(wd.int, 360, by = 1)[
+          360 %% seq(wd.int, 360, by = 1) == 0
+        ])
+        message(
+          "Warning: wd.int = ",
+          original_wd_int,
+          " is not a divisor of 360. Adjusting to wd.int = ",
+          wd.int
+        )
+      }
 
-  # Create wind direction labels with interval notation
-  wd_labels <- paste0("[", head(wd_bins, -1), "-", tail(wd_bins, -1), ")")
-  # 3. Bin the wind speed and wind direction
-  mydata$ws_binned <- cut(ws,
-                          breaks = ws_bins, 
-                          right = FALSE, 
-                          include.lowest = TRUE,
-                          labels = ws_labels)
-  
-  mydata$wd_binned <- cut(wd, 
-                          breaks = wd_bins, 
-                          right = FALSE, 
-                          include.lowest = TRUE,
-                          labels = wd_labels)
-  
-  # 4. Compute frequency of (ws_binned, wd_binned) combinations
-  freq_table <- table(mydata$ws_binned, mydata$wd_binned)
-  
-  if (statistic == "fraction") {
-    freq_table <- (freq_table / sum(complete.cases(ws, wd))) 
+      wd_width <- 360 / wd.int
+      wd_centers <- seq(0, 360 - wd_width, length.out = wd.int)
+      wd_bins <- (wd_centers - wd_width / 2) %% 360
+      wd_bins <- sort(c(wd_bins, 360))
+      wd_labels <- paste0("[", head(wd_bins, -1), "-", tail(wd_bins, -1), ")")
+
+      subset_data$ws_binned <- cut(
+        ws,
+        breaks = ws_bins,
+        right = FALSE,
+        include.lowest = TRUE,
+        labels = ws_labels
+      )
+      subset_data$wd_binned <- cut(
+        wd,
+        breaks = wd_bins,
+        right = FALSE,
+        include.lowest = TRUE,
+        labels = wd_labels
+      )
+
+      freq_table <- table(subset_data$ws_binned, subset_data$wd_binned)
+
+      if (statistic == "fraction") {
+        freq_table <- freq_table / sum(complete.cases(ws, wd))
+      }
+
+      if (format == "data.frame") {
+        freq_table <- as.data.frame(as.table(freq_table))
+        names(freq_table) <- c("ws_bin", "wd_bin", "freq")
+        if (!is.null(locs_id)) {
+          freq_table[[locs_id]] <- unique(subset_data[[locs_id]])
+        }
+      }
+    }
+    return(freq_table)
   }
-  
-  if (format == "data.frame") {
-    freq_table <- as.data.frame(as.table(freq_table))
-    colnames(freq_table) <- c("ws_bin", "wd_bin", "freq")
+
+  # Process grouped or full data
+  if (!is.null(locs_id)) {
+    split_data <- split(mydata, mydata[[locs_id]])
+    result_list <- lapply(split_data, process_one)
+    result <- do.call(rbind, result_list)
+    rownames(result) <- NULL
+  } else {
+    result <- process_one(mydata)
   }
-  
-  return(freq_table)
+
+  return(result)
 }
 
 # Auxiliary function: extract intervals from wind labels
@@ -127,5 +156,3 @@ extract_intervals <- function(bin_labels) {
   bins <- do.call(rbind, bins) # Create matrix of start and end
   return(bins)
 }
-
-# nolint end

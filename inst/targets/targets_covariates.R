@@ -79,12 +79,13 @@ target_covariates <-
       command = windfreq(
         gmet_winds,
         ws_col = paste0("vs_", chr_iter_radii[1]),
-        wd_col = paste0("vs_", chr_iter_radii[1]),
-        ws.int = 20, # change to 1
-        wd.int = 8,
+        wd_col = paste0("th_", chr_iter_radii[1]),
+        ws.int = 100, # Really high value to cause only one itnerval
+        wd.int = 4,
         calm.thres = 0,
         statistic = "fraction",
-        format = "data.frame"
+        format = "data.frame",
+        locs_id = "AMA_SITE_CODE"
       ),
       pattern = map(gmet_winds),
       iteration = "list",
