@@ -1,4 +1,4 @@
-#######################    Join and impute covariates    ###########################
+#######################    DEPRECATED- Old Join and impute covariates targets    ###########################
 #nolint start
 target_covjoin <-
   list(
