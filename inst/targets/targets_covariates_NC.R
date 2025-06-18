@@ -1,4 +1,4 @@
-########################  covariates?   ##########################
+########################  DEPRECATED - Old sate-wide modeling targets   ##########################
 #nolint start
 target_covariates_nc <-
   list(
