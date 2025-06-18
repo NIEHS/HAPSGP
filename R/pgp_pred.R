@@ -9,8 +9,7 @@
 
 #if (is.na(day)) stop("Invalid date provided!")
 
-pgp_pred=function(pred_dates,fullmodel2,pred_grid,vars){
-fullmodel=readRDS(fullmodel2)
+pgp_pred=function(pred_dates,fullmodel,pred_grid,vars){
 #Extract fit data
 model_fit=fullmodel$model
 chemlist=fullmodel$chemlist
