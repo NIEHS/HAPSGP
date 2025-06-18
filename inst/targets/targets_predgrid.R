@@ -1,4 +1,4 @@
-########################  covariates?   ##########################
+########################  DEPRECATED - Old prediction grid targets   ##########################
 #nolint start
 target_predgrid <-
   list(
