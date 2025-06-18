@@ -1,5 +1,4 @@
 ########################  covariates   ##########################
-#nolint start
 target_covariates <-
   list(
     ###########################     GRIDMET     ###########################
@@ -39,7 +38,7 @@ target_covariates <-
     targets::tar_target(
       gmet_windfreq_dates,
       command = sort(unique(format(model_dates, "%Y-%m"))),
-      description = "monthly date indexing for wind frequency computations"
+      description = "monthly date indexing for wind frequency computations | fit"
     ),
     targets::tar_target(
       haps_locsdates,
@@ -55,7 +54,7 @@ target_covariates <-
         haps_full$time = as.character(haps_full$time)
         return(haps_full)
       },
-      description = "haps full date-location pairs for wind frequency computations"
+      description = "haps full date-location pairs for wind frequency computations | fit"
     ),
     targets::tar_target(
       gmet_winds,
@@ -72,7 +71,7 @@ target_covariates <-
       ),
       pattern = map(gmet_windfreq_dates),
       iteration = "list",
-      description = "monthly wind data from gridmet"
+      description = "monthly wind data from gridmet | fit"
     ),
     targets::tar_target(
       gmet_windfreq,
@@ -382,7 +381,6 @@ target_covariates <-
       command = {
         download_nlcd
         beethoven::inject_nlcd(
-          #inject_nlcd2(
           locs = haps_locs,
           # NOTE: locs are all AQS sites for computational efficiency
           locs_id = "AMA_SITE_CODE",
@@ -1635,19 +1633,18 @@ target_covariates <-
     #     description = "Final covariate collinearity reduction | fit"
     #   ),
     #   #######################     FILTER TO STATE      #######################
-    #   target_covariates_nc <-
+    #   target_covariates_state <-
     #     list(
     #       targets::tar_target(
-    #         haps_locs_nc,
+    #         haps_locs_state,
     #         command = select_states(locs = haps_locs, state_list = c("Texas")),
-    #         description = "Extract NC locations"
+    #         description = "Extract state locations"
     #       ),
     #       targets::tar_target(
-    #         covariates_nc,
+    #         covariates_state,
     #         command = xyt_reduce %>%
-    #           filter(AMA_SITE_CODE %in% haps_locs_nc$AMA_SITE_CODE),
-    #         description = "Filter NC covariates"
+    #           filter(AMA_SITE_CODE %in% haps_locs_state$AMA_SITE_CODE),
+    #         description = "Filter stte covariates"
     #       )
     #     )
   )
-#nolint end
