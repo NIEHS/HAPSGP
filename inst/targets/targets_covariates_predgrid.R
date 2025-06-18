@@ -1,5 +1,4 @@
 ########################  covariates   ##########################
-#nolint start
 target_covariates_predgrid <-
   list(
         targets::tar_target(
@@ -12,14 +11,77 @@ target_covariates_predgrid <-
      targets::tar_target(
       gmet_process_pred,
       command = gridmet_process(data=pred_grid,
-      dates_gridmet=model_dates, input_dir="input/covariates/gridmet/",
-      variables_gridmet= variables_gridmet, radiuses=buffer_radius, output="covonly",
+      dates_gridmet=pred_dates, input_dir="input/covariates/gridmet/",
+      variables_gridmet= variables_gridmet, radiuses=chr_iter_radii, output="covonly",
       haps_locs=pred_grid),
       #pattern=cross(variables_gridmet,model_dates),
-      description="gridmet on prediction grid"
-     )
-    ,  
+      description="Process gridmet covariates| predict"
+     ),
+ ###########################        GRIDMET WIND FREQUENCY FOR TRI         ###########################  
 
+    targets::tar_target(
+      gmet_winds_pred,
+      command = gridmet_process(
+        data = pred_grid,
+        dates_gridmet = pred_dates[
+          format(pred_dates, "%Y-%m") == gmet_windfreq_dates
+        ],
+        input_dir = "input/covariates/gridmet/",
+        variables_gridmet = c("vs", "th"),
+        radiuses = chr_iter_radii[1],
+        output = "covonly",
+        haps_locs = pred_grid
+      ),
+      pattern = map(gmet_windfreq_dates),
+      iteration = "list",
+      description = "monthly wind data from gridmet | predict"
+    ),
+    targets::tar_target(
+      gmet_windfreq_pred,
+      command = windfreq(
+        gmet_winds_pred,
+        ws_col = paste0("vs_", chr_iter_radii[1]),
+        wd_col = paste0("th_", chr_iter_radii[1]),
+        ws.int = 100, # Really high value to cause only one itnerval
+        wd.int = 4,
+        calm.thres = 0,
+        statistic = "fraction",
+        format = "data.frame",
+        locs_id = "AMA_SITE_CODE"
+      ),
+      pattern = map(gmet_winds_pred),
+      iteration = "list",
+      description = "wind frequency calculation for TRI | predict"
+    ),   
+  ###########################        EDGAR         ###########################
+    targets::tar_target(
+      list_feat_calc_edgar_pred,
+      command = calculate_edgar(
+        from = process_edgar(
+          year = format.Date(chr_daterange, "%Y"),
+          path = "input/covariates/edgar/data_files/",
+          extent = NULL,
+          voc = edgar_voc,
+          sector_voc = edgar_sector_voc
+        ),
+        locs = pred_grid,
+        locs_id = "AMA_SITE_CODE",
+        radius = chr_iter_radii,
+        fun = "mean",
+        geom = FALSE
+      ),
+      pattern = cross(edgar_voc, chr_iter_radii),
+      iteration = "list",
+      description = "calculate EDGAR data | predict"
+    ),
+    targets::tar_target(
+      dt_feat_calc_edgar_pred,
+      command = beethoven::reduce_merge(
+        beethoven::reduce_list(list_feat_calc_edgar_pred),
+        by = c("AMA_SITE_CODE", "time")
+      ),
+      description = "data.table of EDGAR features | fit"
+    ),
     ###########################      ECOREGIONS      ###########################
     targets::tar_target(
       dt_feat_calc_ecoregions_pred,
@@ -45,80 +107,80 @@ target_covariates_predgrid <-
     )
     ,
     ###########################      TRI/SEDC      ###########################
-    targets::tar_target(
-      list_feat_calc_tri_pred,
-      command = {
-        download_tri
-        beethoven::inject_calculate(
-          covariate = "tri",
-          locs = pred_grid,
-          # NOTE: locs are all AQS sites for computational efficiency
-          injection = list(
-            locs_id = "AMA_SITE_CODE",
-            domain = df_feat_calc_tri_params$year,
-            domain_name = "year",
-            path = file.path(chr_input_dir, "tri"),
-            variables = c(1, 13, 12, 14, 20, 34, 36, 47, 48, 49),
-            radius = df_feat_calc_tri_params$radius,
-            nthreads = 1,
-            covariate = "tri"
-          )
-        )
-      },
-      iteration = "list",
-      pattern = map(df_feat_calc_tri_params),
-      description = "Calculate TRI features"
-    )
-    ,
-    targets::tar_target(
-      list_feat_reduce_tri_pred,
-      command = {
-        list_feat_calc_tri_unnest_pred <- lapply(
-          list_feat_calc_tri_pred,
-          function(x) x[[1]]
-        )
-        chr_tri_radii_index_pred <- sapply(
-          list_feat_calc_tri_unnest_pred,
-          function(x) {
-            any(grepl(sprintf("_%05d", chr_iter_radii_tri), names(x)))
-          }
-        )
-        beethoven::reduce_merge(
-          list_feat_calc_tri_unnest_pred[chr_tri_radii_index_pred],
-          by = NULL,
-          all.x = TRUE,
-          all.y = TRUE
-        )
-      },
-      iteration = "list",
-      pattern = map(chr_iter_radii_tri),
-      description = "Reduce TRI features based on radii | predict"
-    )
-    ,
-    targets::tar_target(
-      dt_feat_calc_tri_pred,
-      command = {
-        dt_feat_merge_tri_pred <- beethoven::reduce_merge(
-          list_feat_reduce_tri_pred[1:2],
-          by = c("AMA_SITE_CODE", "time", "lon", "lat", "tri_year"),
-          all.x = TRUE,
-          all.y = TRUE
-        )
-        dt_feat_merge_tri_pred[is.na(dt_feat_merge_tri_pred)] <- 0
-        dt_feat_pca_tri_pred <- beethoven::post_calc_pca(
-          locs_id = "AMA_SITE_CODE",
-          data = dt_feat_merge_tri_pred,
-          yvar = NULL,
-          num_comp = 5,
-          pattern = "FUGITIVE|STACK",
-          groups = sprintf("%05d", chr_iter_radii_tri),
-          prefix = "TRI",
-          kernel = TRUE
-        )
-      },
-      description = "data.table of TRI PCA-reduced features | predict"
-    )
-    ,
+    # targets::tar_target(
+    #   list_feat_calc_tri_pred,
+    #   command = {
+    #     download_tri
+    #     beethoven::inject_calculate(
+    #       covariate = "tri",
+    #       locs = pred_grid,
+    #       # NOTE: locs are all AQS sites for computational efficiency
+    #       injection = list(
+    #         locs_id = "AMA_SITE_CODE",
+    #         domain = df_feat_calc_tri_params$year,
+    #         domain_name = "year",
+    #         path = file.path(chr_input_dir, "tri"),
+    #         variables = c(1, 13, 12, 14, 20, 34, 36, 47, 48, 49),
+    #         radius = df_feat_calc_tri_params$radius,
+    #         nthreads = 1,
+    #         covariate = "tri"
+    #       )
+    #     )
+    #   },
+    #   iteration = "list",
+    #   pattern = map(df_feat_calc_tri_params),
+    #   description = "Calculate TRI features"
+    # )
+    # ,
+    # targets::tar_target(
+    #   list_feat_reduce_tri_pred,
+    #   command = {
+    #     list_feat_calc_tri_unnest_pred <- lapply(
+    #       list_feat_calc_tri_pred,
+    #       function(x) x[[1]]
+    #     )
+    #     chr_tri_radii_index_pred <- sapply(
+    #       list_feat_calc_tri_unnest_pred,
+    #       function(x) {
+    #         any(grepl(sprintf("_%05d", chr_iter_radii_tri), names(x)))
+    #       }
+    #     )
+    #     beethoven::reduce_merge(
+    #       list_feat_calc_tri_unnest_pred[chr_tri_radii_index_pred],
+    #       by = NULL,
+    #       all.x = TRUE,
+    #       all.y = TRUE
+    #     )
+    #   },
+    #   iteration = "list",
+    #   pattern = map(chr_iter_radii_tri),
+    #   description = "Reduce TRI features based on radii | predict"
+    # )
+    # ,
+    # targets::tar_target(
+    #   dt_feat_calc_tri_pred,
+    #   command = {
+    #     dt_feat_merge_tri_pred <- beethoven::reduce_merge(
+    #       list_feat_reduce_tri_pred[1:2],
+    #       by = c("AMA_SITE_CODE", "time", "lon", "lat", "tri_year"),
+    #       all.x = TRUE,
+    #       all.y = TRUE
+    #     )
+    #     dt_feat_merge_tri_pred[is.na(dt_feat_merge_tri_pred)] <- 0
+    #     dt_feat_pca_tri_pred <- beethoven::post_calc_pca(
+    #       locs_id = "AMA_SITE_CODE",
+    #       data = dt_feat_merge_tri_pred,
+    #       yvar = NULL,
+    #       num_comp = 5,
+    #       pattern = "FUGITIVE|STACK",
+    #       groups = sprintf("%05d", chr_iter_radii_tri),
+    #       prefix = "TRI",
+    #       kernel = TRUE
+    #     )
+    #   },
+    #   description = "data.table of TRI PCA-reduced features | predict"
+    # )
+    # ,
       #command = beethoven::reduce_merge(
       #  lapply(
       #    list_feat_calc_tri,
@@ -139,7 +201,7 @@ target_covariates_predgrid <-
           year = df_feat_calc_nlcd_params$year,
           radius = df_feat_calc_nlcd_params$radius,
           from = amadeus::process_nlcd(
-            path = file.path(chr_input_dir, "nlcd", "data_files"),
+            path = "input/covariates/nlcd/",
             year = df_feat_calc_nlcd_params$year
           ),
           nthreads = 1,
@@ -240,7 +302,29 @@ target_covariates_predgrid <-
       description = "data.table of gRoads features | predict"
     ) ,
     ###########################        KOPPEN        ###########################
-   
+     targets::tar_target(
+      dt_feat_calc_koppen_pred,
+      command = {
+        download_koppen
+        data.table::data.table(
+          amadeus::calculate_koppen_geiger(
+            from = amadeus::process_koppen_geiger(
+              path = file.path(
+                chr_input_dir,
+                "koppen_geiger",
+                "data_files",
+                "Beck_KG_V1_present_0p0083.tif"
+              )
+            ),
+            locs = pred_grid,
+            # NOTE: locs are all AQS sites for computational efficiency
+            locs_id = "AMA_SITE_CODE",
+            geom = FALSE
+          )
+        )
+      },
+      description = "data.table of Koppen Geiger features | predict"
+    ),
   ###########################         NEI          ###########################
     targets::tar_target(
     list_feat_calc_nei_pred,
@@ -351,6 +435,35 @@ target_covariates_predgrid <-
       description = "Calculate GEOS-CF features | aqc | predict"
     )
     ,
+     targets::tar_target(
+      list_feat_calc_geos_chm_pred,
+      command = {
+        download_geos_buffer
+        beethoven::calc_geos_strict(
+          path = file.path(chr_input_dir, "geos", chr_iter_calc_geos[2]),
+          date = beethoven::fl_dates(unlist(list_dates)),
+          locs = pred_grid,
+          locs_id = "AMA_SITE_CODE"
+        )
+      },
+      pattern = map(list_dates),
+      resources = targets::tar_resources(
+        crew = targets::tar_resources_crew(controller = "controller_100")
+      ),
+      iteration = "list",
+      description = "Calculate GEOS-CF features | chm | predict"
+    ),
+    targets::tar_target(
+      dt_feat_calc_geos,
+      command = beethoven::reduce_merge(
+        c(
+          beethoven::reduce_list(list_feat_calc_geos_aqc_pred),
+          beethoven::reduce_list(list_feat_calc_geos_chm_pred)
+        ),
+        by = c("AMA_SITE_CODE", "time", "CO", "NO2", "SO2")
+      ),
+      description = "data.table of GEOS-CF features | predict"
+    ),
 
   ###########################         NARR         ###########################
     targets::tar_target(
@@ -602,7 +715,7 @@ target_covariates_predgrid <-
       command = Reduce(
         post_calc_autojoin2,
         list(
-         # gmet_cleanup_pred,
+          gmet_process_pred,
           dt_feat_calc_geos_pred,
           dt_feat_calc_narr_pred,
           dt_feat_calc_nasa_pred
@@ -617,7 +730,7 @@ target_covariates_predgrid <-
       command = lapply(
         list(
           list(dt_feat_calc_hms_pred),
-          list(dt_feat_calc_tri_pred),
+          #list(dt_feat_calc_tri_pred),
           list(dt_feat_calc_nei_pred),
           list(dt_feat_calc_ecoregions_pred),
           list(dt_feat_calc_koppen_pred),
@@ -657,21 +770,22 @@ target_covariates_predgrid <-
         c(
           list_feat_calc_base_flat_pred,
           list(dt_feat_calc_gmted_pred),
-          list(data.table::data.table(dt_feat_calc_nlcd_pred))
+          list(dt_feat_calc_nlcd_pred),
+          list(dt_feat_calc_edgar_pred)
         )
       ),
-      description = "Base features with PM2.5 | predict"
+      description = "Base features | predict"
    ),
 #######################     CUMULATIVE FEATURES      #######################
     targets::tar_target(
       dt_feat_calc_design_pred,
       command = post_calc_autojoin2(
         dt_feat_calc_base_pred,
-        dt_feat_calc_date_pred,
+         unique(dt_feat_calc_date_predby = c("AMA_SITE_CODE", "time")),
         year_start = as.integer(substr(chr_daterange[1], 1, 4)),
         year_end = as.integer(substr(chr_daterange[2], 1, 4))
       ),
-      description = "data.table of all features with PM2.5 | predict"
+      description = "data.table of all features | predict"
     ),
     targets::tar_target(
       dt_feat_calc_imputed_pred,
@@ -694,20 +808,19 @@ target_covariates_predgrid <-
           locs_id ="AMA_SITE_CODE"
         )
       ),
-      description = "Imputed features + AQS sites (outcome and lat/lon) | predict"
+      description = "Imputed features + prediction grid locations | predict"
     ),
 
 #######################     FILTER TO STATE      #######################
     targets::tar_target(
-      locs_nc_pred,
+      locs_state_pred,
       command = select_states(locs=pred_grid,state_list=c("Texas")),
       description="Extract state locations | predict"
      )
      ,
     targets::tar_target(
-        covariates_nc_pred,
-        command=dt_feat_calc_xyt_pred %>% filter(AMA_SITE_CODE %in% locs_nc_pred$AMA_SITE_CODE),
-        description="Filter NC covariates"
+        covariates_state_pred,
+        command=dt_feat_calc_xyt_pred %>% filter(AMA_SITE_CODE %in% locs_state_pred$AMA_SITE_CODE),
+        description="Filter state covariates"
     )
   )
-  #nolint end
