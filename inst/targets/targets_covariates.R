@@ -35,6 +35,61 @@ target_covariates <-
       ),
       description = "gridmet collinearity reduction | fit"
     ),
+    ###########################        GRIDMET WIND FREQUENCY FOR TRI         ###########################
+    targets::tar_target(
+      gmet_windfreq_dates,
+      command = sort(unique(format(model_dates, "%Y-%m"))),
+      description = "monthly date indexing for wind frequency computations"
+    ),
+    targets::tar_target(
+      haps_locsdates,
+      command = {
+        haps_full <- process_haps(
+          data = dailyavg,
+          date = model_dates,
+          sites_file = haps_metadata,
+          mode = "date-location",
+          data_field = "AMA_SITE_CODE",
+          return_format = "data.table"
+        )
+        haps_full$time = as.character(haps_full$time)
+        return(haps_full)
+      },
+      description = "haps full date-location pairs for wind frequency computations"
+    ),
+    targets::tar_target(
+      gmet_winds,
+      command = gridmet_process(
+        data = haps_locsdates,
+        dates_gridmet = model_dates[
+          format(model_dates, "%Y-%m") == gmet_windfreq_dates
+        ],
+        input_dir = "input/covariates/gridmet/",
+        variables_gridmet = c("vs", "th"),
+        radiuses = chr_iter_radii[1],
+        output = "merged",
+        haps_locs = haps_locs
+      ),
+      pattern = map(gmet_windfreq_dates),
+      iteration = "list",
+      description = "monthly wind data from gridmet"
+    ),
+    targets::tar_target(
+      gmet_windfreq,
+      command = windfreq(
+        gmet_winds,
+        ws_col = paste0("vs_", chr_iter_radii[1]),
+        wd_col = paste0("vs_", chr_iter_radii[1]),
+        ws.int = 20, # change to 1
+        wd.int = 8,
+        calm.thres = 0,
+        statistic = "fraction",
+        format = "data.frame"
+      ),
+      pattern = map(gmet_winds),
+      iteration = "list",
+      description = "wind frequency calculation for TRI | fit"
+    ),
     ###########################        EDGAR         ###########################
     targets::tar_target(
       edgar_voc,

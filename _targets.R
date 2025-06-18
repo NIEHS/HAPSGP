@@ -120,6 +120,7 @@ tar_source("R/pgp_preprocessing.R")
 tar_source("R/reduce_correlated_variables.R")
 tar_source("R/process_edgar.R")
 tar_source("R/calculate_edgar.R")
+tar_source("R/windfreq.R")
 
 ###########################      SOURCE TARGETS      ###########################
 targets::tar_source("inst/targets/targets_critical.R")
