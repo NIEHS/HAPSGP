@@ -3,22 +3,22 @@ target_fit <-
   list(
     # targets::tar_target(
     #     name = model_fit,
-    #    command = pgp_fit(data=dt_feat_calc_xyt,
+    #    command = pgp_fit(data=xyt_reduce,
     #                     dates=model_dates,
     #                     vars=vars, logscale=TRUE),
-    #     description = "PGP fit on full data"
+    #     description = "PGP fit on full USA dataset"
     # ),
     targets::tar_target(
-      name = pgp_cleanup_nc,
+      name = pgp_cleanup_state,
       command = pgp_preprocessing(
-        data = covariates_nc
+        data = covariates_state
       ),
-      description = "Clean up HAPS data for PGP fit"
+      description = "Clean up state HAPS + covariate data for PGP fit"
     ),
     #   targets::tar_target(
-    #     name = model_fit_nc,
+    #     name = model_fit_state,
     #     command = pgp_fit(
-    #       data = pgp_cleanup_nc,
+    #       data = pgp_cleanup_state,
     #       dates = model_dates,
     #       vars = vars,
     #       logscale = TRUE
@@ -27,7 +27,7 @@ target_fit <-
     targets::tar_target(
       name = pgp_crossvalidation_nc_random,
       command = pgp_cv(
-        data = pgp_cleanup_nc,
+        data = pgp_cleanup_state,
         dates = model_dates,
         vars = vars,
         logscale = FALSE,
@@ -38,7 +38,7 @@ target_fit <-
     targets::tar_target(
       name = pgp_crossvalidation_nc_spatrandom,
       command = pgp_cv(
-        data = pgp_cleanup_nc,
+        data = pgp_cleanup_state,
         dates = model_dates,
         vars = vars,
         logscale = FALSE,
@@ -49,7 +49,7 @@ target_fit <-
     targets::tar_target(
       name = pgp_crossvalidation_nc_spatsnake,
       command = pgp_cv(
-        data = pgp_cleanup_nc,
+        data = pgp_cleanup_state,
         dates = model_dates,
         vars = vars,
         logscale = FALSE,
