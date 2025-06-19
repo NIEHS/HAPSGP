@@ -5,9 +5,10 @@ library(sf)
 library(mapview)
 library(terra)
 library(dplyr)
+library(openair)
 
-source("other/archive/windfreq.R")
-source("other/archive/get_bearing.R")
+source("R/windfreq.R")
+source("R/get_bearing.R")
 # 1. Import one HAPS site and nearing TRI sites
 # Import all of texas and use mapview to select a good candidate
 locs = tar_read("haps_locs_nc")
@@ -35,14 +36,17 @@ mapview(tri_sf, col.regions = "red") +
   mapview(locs_sf)
 
 # Extract site near Abilene 484411509
-site_tx = locs %>% dplyr::filter(AMA_SITE_CODE == "484411509")
+site_tx = locs %>%
+  dplyr::filter(AMA_SITE_CODE == "481351093")
+# dplyr::filter(AMA_SITE_CODE %in% c("481351093", "481351092", "481350003", "483291095"))
 #mapview(site_tx, col.regions="green")
 
 # 2. Get wind frequency bins for this site
 # Import wind data
 covs = tar_read(covariates_nc)
-covs_tx = covs %>% dplyr::filter(AMA_SITE_CODE == "484411509")
-
+covs_tx = covs %>% dplyr::filter(AMA_SITE_CODE == "481351093")
+#covs_tx = covs %>%
+# dplyr::filter(AMA_SITE_CODE %in% c("481351093", "481351092", "481350003", "483291095"))
 
 library(openair)
 #colnames(covs_tx)[colnames(covs_tx)=="vs_0"]="ws"
@@ -63,11 +67,12 @@ wf = windfreq(
   wd.int = 4,
   calm.thres = 0,
   statistic = "fraction",
-  format = "data.frame"
+  format = "data.frame",
+  locs_id = "AMA_SITE_CODE"
 )
 
 # Use openair too to get a visual of the bins
-pf = polarFreq(covs_tx, ws.int = 8.6, wd.nint = 4)$data # They match well with my windfreq
+pf = polarFreq(covs_tx, ws.int = 100, wd.nint = 4)$data # They match well with my windfreq
 
 # 3. Get bearings
 # Make sure the bearing angles and the wind angles match right - may have to invert
@@ -215,13 +220,16 @@ res_sedc$bearing <- mapply(
   res_sedc$LONGITUDE,
   res_sedc$LATITUDE
 )
-res_sedc$freq <- sapply(
-  res_sedc$bearing,
-  match_bin,
-  wd_intervals = wd_intervals,
-  freq_values = wf$freq
-)
+bearings_df = as.data.frame(cbind(res_sedc[[locs_id]], res_sedc$bearing))
+colnames(bearings_df) = c(locs_id, "bearings")
 
+res_sedc$freq <-
+  match_wind_bin(
+    bearings = bearings_df,
+    wd_intervals = extract_intervals(wf$wd_bin),
+    freq_data = wf,
+    locs_id = locs_id
+  )
 res_sedc <- res_sedc |>
   dplyr::mutate(w_sedc = freq * exp((-3 * dist) / sedc_bandwidth)) |>
   dplyr::group_by(!!rlang::sym(locs_id)) |>
@@ -270,3 +278,27 @@ tri_df = data.frame(
   tri1 = unlist(as.vector(res_sedc_return[, 2:13])),
   tri2 = unlist(as.vector(res_sedc_return2[, 2:13]))
 )
+
+
+# Test calculate tri2 function
+source("R/calculate_tri2.R")
+source("R/sum_edc2.R")
+tri2 = calculate_tri2(
+  from = ptri,
+  locs = site_tx,
+  locs_id = "AMA_SITE_CODE",
+  radius = 2e4L,
+  wf = wf
+)
+
+tri = amadeus::calculate_tri(
+  from = ptri,
+  locs = site_tx,
+  locs_id = "AMA_SITE_CODE",
+  radius = 2e4L,
+  wf = wf
+)
+
+
+tri_return1 = tri[, colSums(tri != 0) > 0]
+tri_return2 = tri2[, colSums(tri2 != 0) > 0]

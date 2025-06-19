@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=HAPSGP_container
-#SBATCH --partition=highmem
-#SBATCH --mem=100G
-#SBATCH --cpus-per-task=10
+#SBATCH --partition=geo
+#SBATCH --mem=200G
+#SBATCH --cpus-per-task=20
 #SBATCH --ntasks-per-node=1
 #SBATCH --nodes=1
-#SBATCH --output=runHAPSGP0616_%j.out
-#SBATCH --error=runHAPSGP0616_%j.err
+#SBATCH --output=runHAPSGP0618_%j.out
+#SBATCH --error=runHAPSGP0618_%j.err
 #SBATCH --mail-user=mariana.kassien@nih.gov
 #SBATCH --mail-type=ALL
 

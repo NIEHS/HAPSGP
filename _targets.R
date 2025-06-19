@@ -121,6 +121,9 @@ tar_source("R/reduce_correlated_variables.R")
 tar_source("R/process_edgar.R")
 tar_source("R/calculate_edgar.R")
 tar_source("R/windfreq.R")
+tar_source("R/get_bearing.R")
+tar_source("R/calculate_tri2.R")
+tar_source("R/sum_edc2.R")
 
 ###########################      SOURCE TARGETS      ###########################
 targets::tar_source("inst/targets/targets_critical.R")
@@ -135,7 +138,7 @@ list(
   target_critical,
   target_initiate,
   target_haps,
-  target_covariates #,
-  #target_covariates_predgrid,
+  target_covariates,
+  target_covariates_predgrid #,
   #target_fit
 )

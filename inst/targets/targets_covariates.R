@@ -34,7 +34,7 @@ target_covariates <-
       ),
       description = "gridmet collinearity reduction | fit"
     ),
-    ###########################        GRIDMET WIND FREQUENCY FOR TRI         ###########################
+    ###########################   GRIDMET WIND FREQUENCY FOR TRI     ###########################
     targets::tar_target(
       gmet_windfreq_dates,
       command = sort(unique(format(model_dates, "%Y-%m"))),
@@ -1554,9 +1554,7 @@ target_covariates <-
         function(x) {
           if (length(x) == 1) {
             x[[1]]
-          } else if (
-            sum(grepl("light|medium|heavy", sapply(x, \(t) names(t)))) == 3
-          ) {
+          } else if (sum(grepl("light|medium|heavy", sapply(x, \(t) names(t)))) == 3) {
             xr <- lapply(x, \(dt) {
               dta <- data.table::copy(dt)
               dta <- dta[, time := as.character(time)]
@@ -1624,7 +1622,7 @@ target_covariates <-
     #     description = "Imputed features + AQS sites (outcome and lat/lon) | fit"
     #   ),
     #   targets::tar_target(
-    #     xyt_reduce,
+    #     data_full_final,
     #     command = reduce_correlated_variables(
     #       dt = dt_feat_calc_xyt,
     #       cor_threshold = 0.89,
@@ -1642,7 +1640,7 @@ target_covariates <-
     #       ),
     #       targets::tar_target(
     #         covariates_state,
-    #         command = xyt_reduce %>%
+    #         command = data_full_final %>%
     #           filter(AMA_SITE_CODE %in% haps_locs_state$AMA_SITE_CODE),
     #         description = "Filter stte covariates"
     #       )

@@ -3,7 +3,7 @@ target_fit <-
   list(
     # targets::tar_target(
     #     name = model_fit,
-    #    command = pgp_fit(data=xyt_reduce,
+    #    command = pgp_fit(data=data_full_final,
     #                     dates=model_dates,
     #                     vars=vars, logscale=TRUE),
     #     description = "PGP fit on full USA dataset"
@@ -15,15 +15,15 @@ target_fit <-
       ),
       description = "Clean up state HAPS + covariate data for PGP fit"
     ),
-      targets::tar_target(
-         name = model_fit_state,
-         command = pgp_fit(
-           data = pgp_cleanup_state,
-           dates = model_dates,
-           vars = vars,
-           logscale = TRUE
-        )
-       ),
+    targets::tar_target(
+      name = model_fit_state,
+      command = pgp_fit(
+        data = pgp_cleanup_state,
+        dates = model_dates,
+        vars = vars,
+        logscale = TRUE
+      )
+    ),
     targets::tar_target(
       name = pgp_crossvalidation_state_random,
       command = pgp_cv(
@@ -58,15 +58,14 @@ target_fit <-
       )
     ),
     targets::tar_target(
-     name = prediction_state,
-     command = pgp_pred(
-     pred_dates = pred_dates,
-     fullmodel = model_fit_state,
-     pred_grid =  covariates_state_pred,
-     vars = vars
-     ),
+      name = prediction_state,
+      command = pgp_pred(
+        pred_dates = pred_dates,
+        fullmodel = model_fit_state,
+        pred_grid = covariates_state_pred,
+        vars = vars
+      ),
       pattern = map(pred_dates),
       description = "Prediction on state grid"
     )
-  )
   )

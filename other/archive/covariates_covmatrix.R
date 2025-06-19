@@ -30,5 +30,10 @@ png("corrplotUSA_large.png", width = 9000, height = 9000, res = 1000)
 corrplot(cor_matrix, method = "color", tl.cex = 0.2) # Adjust tl.cex to scale labels
 dev.off()
 
+# Save to PDF
+pdf("corrplotUSA_large.pdf", width = 20, height = 20) # in inches
+corrplot(cor_matrix, method = "color", tl.cex = 0.2)
+dev.off()
+
 View(cor_matrix)
 View(cov_data1)

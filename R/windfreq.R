@@ -98,9 +98,25 @@ windfreq <- function(
 
       wd_width <- 360 / wd.int
       wd_centers <- seq(0, 360 - wd_width, length.out = wd.int)
-      wd_bins <- (wd_centers - wd_width / 2) %% 360
-      wd_bins <- sort(c(wd_bins, 360))
-      wd_labels <- paste0("[", head(wd_bins, -1), "-", tail(wd_bins, -1), ")")
+      wd_starts <- (wd_centers - wd_width / 2) %% 360
+      wd_ends <- (wd_centers + wd_width / 2) %% 360
+      wd_intervals <- cbind(wd_starts, wd_ends)
+      wd_labels <- paste0("[", wd_starts, "-", wd_ends, ")")
+      assign_wd_bin <- function(angle) {
+        for (i in seq_len(nrow(wd_intervals))) {
+          start <- wd_intervals[i, 1]
+          end <- wd_intervals[i, 2]
+          if (
+            (start < end && angle >= start && angle < end) ||
+              (start > end && (angle >= start || angle < end))
+          ) {
+            return(wd_labels[i])
+          }
+        }
+        return(NA_character_) # If no match found
+      }
+
+      subset_data$wd_binned <- vapply(wd, assign_wd_bin, character(1))
 
       subset_data$ws_binned <- cut(
         ws,
@@ -109,14 +125,6 @@ windfreq <- function(
         include.lowest = TRUE,
         labels = ws_labels
       )
-      subset_data$wd_binned <- cut(
-        wd,
-        breaks = wd_bins,
-        right = FALSE,
-        include.lowest = TRUE,
-        labels = wd_labels
-      )
-
       freq_table <- table(subset_data$ws_binned, subset_data$wd_binned)
 
       if (statistic == "fraction") {
