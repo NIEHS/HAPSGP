@@ -1,0 +1,184 @@
+---
+title: "MLE Simulation and Censored Data Analysis"
+output: html_document
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+
+```
+
+# Simulate ~ N(0,1) data
+
+```{r}
+x <- rnorm(10^6)
+
+ggplot(data.frame(x = x), aes(x = x)) + geom_histogram()
+```
+ 
+# Create a negative log-likelihood function for normal data
+
+The negative Log-Likelihood function for a normal distribution is the negative of the sum of the log of the density function of the normal distribution.
+
+```{r}
+ rMLE <- function(params, y){
+   
+   mu = params[1]
+   sigma = params[2]
+   
+   return(-1 * sum(dnorm(y, mean = mu, sd = sigma, log = TRUE)))
+   
+ }
+``` 
+ 
+# 100 percent observed MLE 
+
+We use starting values kind of far away from true values to make sure the optimization converges to the right values for this easy case.
+
+```{r}
+ mle0 <- optim(par = c(2,3), rMLE, y = x)
+ results <- mle0$par
+ print(results)
+```
+ 
+Try with a different mean and standard deviation. Also, we start with starting values quite different to make sure the optimization converges to the right values for this easy case
+
+```{r}
+ x3 <- rnorm(10^6, mean = 3, sd = 6)
+ 
+ mle3 <- optim(par = c(0,1), rMLE, y = x3)
+ 
+ results3 <- mle3$par
+ print(results3)
+```
+
+## Censored MLE function
+ 
+
+```{r} 
+ cMLE <- function(params, y.obs, y.cens = NULL){
+   
+   mu = params[1]
+   sigma = params[2]
+   
+   
+    obs_ll <- sum(dnorm(y.obs, mean = mu, sd = sigma, log = TRUE))
+    cens_ll <- sum(pnorm(y.cens, mean = mu, sd = sigma, log.p = TRUE, lower.tail = TRUE))
+    nll <- -1 * (obs_ll + cens_ll)
+    
+    return(nll)
+   
+ }
+```
+ 
+## Check that the censored ML is working. 
+
+We will do  a loop by censoring more and more data below the MDL. The MLE estimates should deviate more and more from the observed mean and standard deviation as we censor more data.
+ 
+```{r} 
+MDL <- -1.5
+
+p <- seq(0.1, 1, by = 0.1)
+
+results <- list()
+  
+  
+for (i in 1:length(p)){
+  
+  # random sample of p percent of the data
+  idx <- c(1:length(x)) %in% sample.int(length(x), length(x) * p[i])
+  
+  cens_data <- rep(MDL, length(x) * (1-p[i]))
+  obs_data <- x[idx]
+  
+  mle <- optim(par = c(0,1), cMLE, y.obs = obs_data, y.cens = cens_data)
+  
+  results[[i]] <- mle$par
+  raw_mean=mean(c(obs_data,cens_data))
+  
+  print(paste("raw_mean=",raw_mean,"mu = ",results[[i]][1], "sd = ", results[[i]][2], "censored percentage = ", (100-p[i]*100)))
+  
+ # print(paste("mu = ",results[[i]][1], "sd = ", results[[i]][2], "censored percentage = ", (100-p[i]*100)))
+  
+}
+
+```
+
+The results seem to make sense; As the censoring decrease the MLE estimates get closer to the true values. Additionally, as the censoring increases, the mean moves farther towards -Inf, away from the MDL.
+
+ 
+# MLE Trick for Strictly Positive Parameters 
+
+We often have to estimate parameters that are strictly positive. For example, the mean concentration on the normal scale should be non-negative or a variance parameter (e.g. Kriging variance/sill).
+
+One trick is to estimate the log of the parameter. Our estimate is then $exp(x)$. This way, the parameter is always positive. We could do constrained optimization, but the algorithms for unconstrained optimization are more efficient and more robust.
+
+
+## MLE for observed data and log parameters
+```{r}
+ rMLE_log <- function(params, y){
+   
+   mu = exp(params[1])
+   sigma = exp(params[2])
+   
+   return(-1 * sum(dnorm(y, mean = mu, sd = sigma, log = TRUE)))
+   
+ }
+
+# Simulate strictly positive log-normal data
+z <- rlnorm(10^3, meanlog = 3, sdlog = 1)
+
+mle_log <- optim(par = c(5,1), rMLE_log, y = z)
+
+results <- exp(mle_log$par)
+
+print(paste("mu = ",results[1], "sd = ", results[2]))
+print(paste("observed mean = ", mean(z), "observed sd = ", sd(z)))
+```
+# Combine functions fore censored MLE on Positive values
+
+```{r}
+cMLE_log <- function(params, y.obs, y.cens = NULL){
+  mu = exp(params[1])
+  sigma = exp(params[2])
+
+  obs_ll <- sum(dnorm(y.obs, mean = mu, sd = sigma, log = TRUE))
+    cens_ll <- sum(pnorm(y.cens, mean = mu, sd = sigma, log.p = TRUE, lower.tail = TRUE))
+    nll <- -1 * (obs_ll + cens_ll)
+    return(nll)
+}
+
+# Simulate strictly positive log-normal data
+z <- rlnorm(10^3, meanlog = 3, sdlog = 1)
+
+
+MDL <- 1.5
+p <- seq(0.1, 1, by = 0.1)
+
+results <- list()
+
+for (i in 1:length(p)){
+  
+  # random sample of p percent of the data
+  idx <- c(1:length(z)) %in% sample.int(length(z), length(z) * p[i])
+  
+  cens_data <- rep(MDL, length(z) * (1-p[i]))
+  obs_data <- z[idx]
+  
+  mle <- optim(par = c(mean(z),sd(z)), cMLE_log, y.obs = obs_data, y.cens = cens_data)
+  
+  results[[i]] <- exp(mle$par)
+  
+  raw_mean=mean(c(obs_data,cens_data))
+  
+  print(paste("raw_mean=",raw_mean,"mu = ",results[[i]][1], "sd = ", results[[i]][2], "censored percentage = ", (100-p[i]*100)))
+  
+}
+
+print(paste("observed mean = ", mean(z), "observed sd = ", sd(z)))  
+ 
+
+```
+
