@@ -138,7 +138,7 @@ list(
   target_critical,
   target_initiate,
   target_haps,
-  target_covariates,
-  target_covariates_predgrid #,
+  target_covariates #,
+  #target_covariates_predgrid,
   #target_fit
 )

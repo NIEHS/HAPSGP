@@ -75,20 +75,59 @@ target_covariates <-
     ),
     targets::tar_target(
       gmet_windfreq,
-      command = windfreq(
-        gmet_winds,
-        ws_col = paste0("vs_", chr_iter_radii[1]),
-        wd_col = paste0("th_", chr_iter_radii[1]),
-        ws.int = 100, # Really high value to cause only one itnerval
-        wd.int = 4,
-        calm.thres = 0,
-        statistic = "fraction",
-        format = "data.frame",
-        locs_id = "AMA_SITE_CODE"
-      ),
+      command = {
+        wfreq = windfreq(
+          gmet_winds,
+          ws_col = paste0("vs_", chr_iter_radii[1]),
+          wd_col = paste0("th_", chr_iter_radii[1]),
+          ws.int = 100, # Really high value to cause only one itnerval
+          wd.int = 4,
+          calm.thres = 0,
+          statistic = "fraction",
+          format = "data.frame",
+          locs_id = "AMA_SITE_CODE"
+        )
+        wfreq$time = unique(format(as.Date(gmet_winds$time, format = "%Y-%m-%d"), "%Y-%m"))
+        return(wfreq)
+      },
       pattern = map(gmet_winds),
       iteration = "list",
       description = "wind frequency calculation for TRI | fit"
+    ),
+    targets::tar_target(
+      gmet_windfreq2,
+      command = gmet_windfreq[[1]],
+      # gmet_windfreq[c(
+      # 1,
+      # 2,
+      # 3,
+      # 4,
+      # 10,
+      # 11,
+      # 12,
+      # 13,
+      # 14,
+      # 15,
+      # 16,
+      # 17,
+      # 22,
+      # 23,
+      # 24,
+      # 26,
+      # 27,
+      # 28,
+      # 29,
+      # 34,
+      # 35,
+      # 36,
+      # 37,
+      # 38,
+      # 39,
+      # 46,
+      # 47,
+      # 48
+      # )],
+      description = "wind frequency for good months only, testing"
     ),
     ###########################        EDGAR         ###########################
     targets::tar_target(
@@ -232,45 +271,35 @@ target_covariates <-
       #command = qs2::qs_read("/set_targets/objects/download_tri"),
       description = "Read TRI data target from Beethoven"
     ),
-    targets::tar_target(
-      chr_iter_radii_tri,
-      command = c(1000, 10000),
-      description = "Buffer radii for TRI"
-    ),
-    targets::tar_target(
-      df_feat_calc_tri_params,
-      command = expand.grid(
-        year = chr_years,
-        radius = chr_iter_radii_tri
-      ) %>%
-        split(seq_len(nrow(.))),
-      iteration = "list",
-      description = "TRI features"
-    ),
     # targets::tar_target(
-    #   list_feat_calc_tri,
-    #   command = {
-    #     download_tri
-    #     beethoven::inject_calculate(
-    #       covariate = "tri",
-    #       locs = haps_locs,
-    #       # NOTE: locs are all AQS sites for computational efficiency
-    #       injection = list(
-    #         locs_id = "AMA_SITE_CODE",
-    #         domain = df_feat_calc_tri_params$year,
-    #         domain_name = "year",
-    #         path = file.path(chr_input_dir, "tri"),
-    #         variables = c(1, 13, 12, 14, 20, 34, 36, 47, 48, 49),
-    #         radius = df_feat_calc_tri_params$radius,
-    #         nthreads = 1,
-    #         covariate = "tri"
-    #       )
-    #     )
-    #   },
-    #   iteration = "list",
-    #   pattern = map(df_feat_calc_tri_params),
-    #   description = "Calculate TRI features"
+    #   list_iter_radii_tri,
+    #   command = c(1000, 10000),
+    #   description = "Buffer radii for TRI"
     # ),
+    targets::tar_target(
+      list_feat_calc_tri_wf,
+      command = {
+        download_tri
+        from <- amadeus::process_tri(
+          path = file.path(chr_input_dir, "tri"),
+          year = as.numeric(sub("-.*", "", unique(gmet_windfreq$time))),
+          variables = c(1, 13, 12, 14, 20, 34, 36, 47, 48, 49)
+        )
+        tri_wf <- calculate_tri2(
+          from = from,
+          locs = haps_locs,
+          locs_id = "AMA_SITE_CODE",
+          radius = 1000,
+          wf = gmet_windfreq2, #won't branch along the whole windfreq...
+          geom = FALSE
+        )
+        tri_wf$time = unique(gmet_windfreq$time)
+        return(tri_wf)
+      },
+      pattern = map(gmet_windfreq),
+      iteration = "list",
+      description = "calculate monthly TRI data with wind buffers| fit"
+    ),
     # targets::tar_target(
     #   list_feat_reduce_tri,
     #   command = {

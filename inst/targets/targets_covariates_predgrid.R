@@ -87,28 +87,29 @@ target_covariates_predgrid <-
       description = "data.table of EDGAR features | fit"
     ),
     ###########################      ECOREGIONS      ###########################
-    targets::tar_target(
-      dt_feat_calc_ecoregions_pred,
-      command = {
-        download_ecoregions
-        data.table::data.table(
-          amadeus::calculate_ecoregion(
-            from = amadeus::process_ecoregion(
-              path = file.path(
-                chr_input_dir,
-                "ecoregions",
-                "data_files",
-                "us_eco_l3_state_boundaries.shp"
-              )
-            ),
-            radius = 100,
-            locs = pred_grid,
-            locs_id = "AMA_SITE_CODE"
-          )
-        )
-      },
-      description = "data.table of Ecoregions features | predict"
-    ),
+    ## current error: Error: arguments imply differing number of rows: 1870, 1, 2629
+    # targets::tar_target(
+    #   dt_feat_calc_ecoregions_pred,
+    #   command = {
+    #     download_ecoregions
+    #     data.table::data.table(
+    #       amadeus::calculate_ecoregion(
+    #         from = amadeus::process_ecoregion(
+    #           path = file.path(
+    #             chr_input_dir,
+    #             "ecoregions",
+    #             "data_files",
+    #             "us_eco_l3_state_boundaries.shp"
+    #           )
+    #         ),
+    #         radius = 100,
+    #         locs = pred_grid,
+    #         locs_id = "AMA_SITE_CODE"
+    #       )
+    #     )
+    #   },
+    #   description = "data.table of Ecoregions features | predict"
+    # ),
     ###########################      TRI/SEDC      ###########################
     # targets::tar_target(
     #   list_feat_calc_tri_pred,
@@ -306,29 +307,30 @@ target_covariates_predgrid <-
       description = "data.table of gRoads features | predict"
     ),
     ###########################        KOPPEN        ###########################
-    targets::tar_target(
-      dt_feat_calc_koppen_pred,
-      command = {
-        download_koppen
-        data.table::data.table(
-          amadeus::calculate_koppen_geiger(
-            from = amadeus::process_koppen_geiger(
-              path = file.path(
-                chr_input_dir,
-                "koppen_geiger",
-                "data_files",
-                "Beck_KG_V1_present_0p0083.tif"
-              )
-            ),
-            locs = pred_grid,
-            # NOTE: locs are all AQS sites for computational efficiency
-            locs_id = "AMA_SITE_CODE",
-            geom = FALSE
-          )
-        )
-      },
-      description = "data.table of Koppen Geiger features | predict"
-    ),
+    ##current error: Error: replacement has 1870 rows, data has 1022805
+    # targets::tar_target(
+    #   dt_feat_calc_koppen_pred,
+    #   command = {
+    #     download_koppen
+    #     data.table::data.table(
+    #       amadeus::calculate_koppen_geiger(
+    #         from = amadeus::process_koppen_geiger(
+    #           path = file.path(
+    #             chr_input_dir,
+    #             "koppen_geiger",
+    #             "data_files",
+    #             "Beck_KG_V1_present_0p0083.tif"
+    #           )
+    #         ),
+    #         locs = pred_grid,
+    #         # NOTE: locs are all AQS sites for computational efficiency
+    #         locs_id = "AMA_SITE_CODE",
+    #         geom = FALSE
+    #       )
+    #     )
+    #   },
+    #   description = "data.table of Koppen Geiger features | predict"
+    # ),
     ###########################         NEI          ###########################
     targets::tar_target(
       list_feat_calc_nei_pred,
@@ -470,101 +472,103 @@ target_covariates_predgrid <-
     ),
 
     ###########################         NARR         ###########################
-    targets::tar_target(
-      list_feat_calc_narr_pred,
-      command = {
-        download_narr_buffer
-        dt_iter_calc_narr <- amadeus::calculate_narr(
-          from = amadeus::process_narr(
-            path = file.path(chr_input_dir, "narr", chr_iter_calc_narr),
-            variable = chr_iter_calc_narr,
-            date = beethoven::fl_dates(unlist(list_dates))
-          ),
-          locs = pred_grid,
-          locs_id = "AMA_SITE_CODE",
-          radius = 0,
-          fun = "mean",
-          geom = FALSE
-        )
-        if (length(grep("level", names(dt_iter_calc_narr))) == 1) {
-          dt_iter_calc_narr <-
-            dt_iter_calc_narr[dt_iter_calc_narr$level == 1000, ]
-          dt_iter_calc_narr <-
-            dt_iter_calc_narr[, -grep("level", names(dt_iter_calc_narr))]
-        }
-        beethoven::post_calc_cols(
-          dt_iter_calc_narr,
-          prefix = "NARR_0_",
-          skip = c("AMA_SITE_CODE", "time")
-        )
-      },
-      pattern = cross(list_dates, chr_iter_calc_narr),
-      iteration = "list",
-      description = "Calculate NARR features | nolag | predict"
-    ),
-    targets::tar_target(
-      dt_feat_calc_narr_nolag_pred,
-      command = beethoven::reduce_merge(
-        beethoven::reduce_list(list_feat_calc_narr_pred),
-        by = c("AMA_SITE_CODE", "time")
-      ),
-      description = "data.table of NARR features | nolag | predict"
-    ),
-    targets::tar_target(
-      list_feat_calc_narr_lag_pred,
-      command = {
-        download_narr_buffer
-        dt_lag_calc_narr <- amadeus::calculate_narr(
-          from = amadeus::process_narr(
-            path = file.path(chr_input_dir, "narr", chr_iter_calc_narr_lag),
-            variable = chr_iter_calc_narr_lag,
-            date = as.character(chr_dates[1] - 1)
-          ),
-          locs = pred_grid,
-          locs_id = "AMA_SITE_CODE",
-          radius = 0,
-          fun = "mean",
-          geom = FALSE
-        )
-        if (length(grep("level", names(dt_lag_calc_narr))) == 1) {
-          dt_lag_calc_narr <-
-            dt_lag_calc_narr[dt_lag_calc_narr$level == 1000, ]
-          dt_lag_calc_narr <-
-            dt_lag_calc_narr[, -grep("level", names(dt_lag_calc_narr))]
-        }
-        dt_lag_calc_narr <- beethoven::post_calc_cols(
-          dt_lag_calc_narr,
-          prefix = "NARR_0_",
-          skip = c("AMA_SITE_CODE", "time")
-        )
-        int_narr_cols <- which(
-          names(dt_feat_calc_narr_nolag_pred) %in% names(dt_lag_calc_narr)
-        )
-        dt_iter_calc_narr_bind <- rbind(
-          dt_lag_calc_narr,
-          dt_feat_calc_narr_nolag_pred[, int_narr_cols, with = FALSE]
-        )
-        amadeus::calculate_lagged(
-          from = dt_iter_calc_narr_bind,
-          date = chr_daterange,
-          lag = 1,
-          locs_id = "AMA_SITE_CODE"
-        )
-      },
-      pattern = map(chr_iter_calc_narr_lag),
-      iteration = "list",
-      description = "Calculate NARR features | lag | predict"
-    ),
-    targets::tar_target(
-      dt_feat_calc_narr_pred,
-      command = beethoven::reduce_merge(
-        beethoven::reduce_list(
-          c(list(dt_feat_calc_narr_nolag_pred), list_feat_calc_narr_lag_pred)
-        ),
-        by = c("AMA_SITE_CODE", "time")
-      ),
-      description = "data.table of NARR features | predict"
-    ),
+    # Current error: target list_feat_calc_narr_pred_7e6142a91e91d6b0 error: cannot open the connection
+    # Tried again renaming the target, I get error  target list_feat_calc_narr_pred2_cccd1fb2dab39ab1 error: there is no package called ‘igraph’
+    # targets::tar_target(
+    #   list_feat_calc_narr_pred,
+    #   command = {
+    #     download_narr_buffer
+    #     dt_iter_calc_narr <- amadeus::calculate_narr(
+    #       from = amadeus::process_narr(
+    #         path = file.path(chr_input_dir, "narr", chr_iter_calc_narr),
+    #         variable = chr_iter_calc_narr,
+    #         date = beethoven::fl_dates(unlist(list_dates))
+    #       ),
+    #       locs = pred_grid,
+    #       locs_id = "AMA_SITE_CODE",
+    #       radius = 0,
+    #       fun = "mean",
+    #       geom = FALSE
+    #     )
+    #     if (length(grep("level", names(dt_iter_calc_narr))) == 1) {
+    #       dt_iter_calc_narr <-
+    #         dt_iter_calc_narr[dt_iter_calc_narr$level == 1000, ]
+    #       dt_iter_calc_narr <-
+    #         dt_iter_calc_narr[, -grep("level", names(dt_iter_calc_narr))]
+    #     }
+    #     beethoven::post_calc_cols(
+    #       dt_iter_calc_narr,
+    #       prefix = "NARR_0_",
+    #       skip = c("AMA_SITE_CODE", "time")
+    #     )
+    #   },
+    #   pattern = cross(list_dates, chr_iter_calc_narr),
+    #   iteration = "list",
+    #   description = "Calculate NARR features | nolag | predict"
+    # ),
+    # targets::tar_target(
+    #   dt_feat_calc_narr_nolag_pred,
+    #   command = beethoven::reduce_merge(
+    #     beethoven::reduce_list(list_feat_calc_narr_pred2),
+    #     by = c("AMA_SITE_CODE", "time")
+    #   ),
+    #   description = "data.table of NARR features | nolag | predict"
+    # ),
+    # targets::tar_target(
+    #   list_feat_calc_narr_lag_pred,
+    #   command = {
+    #     download_narr_buffer
+    #     dt_lag_calc_narr <- amadeus::calculate_narr(
+    #       from = amadeus::process_narr(
+    #         path = file.path(chr_input_dir, "narr", chr_iter_calc_narr_lag),
+    #         variable = chr_iter_calc_narr_lag,
+    #         date = as.character(chr_dates[1] - 1)
+    #       ),
+    #       locs = pred_grid,
+    #       locs_id = "AMA_SITE_CODE",
+    #       radius = 0,
+    #       fun = "mean",
+    #       geom = FALSE
+    #     )
+    #     if (length(grep("level", names(dt_lag_calc_narr))) == 1) {
+    #       dt_lag_calc_narr <-
+    #         dt_lag_calc_narr[dt_lag_calc_narr$level == 1000, ]
+    #       dt_lag_calc_narr <-
+    #         dt_lag_calc_narr[, -grep("level", names(dt_lag_calc_narr))]
+    #     }
+    #     dt_lag_calc_narr <- beethoven::post_calc_cols(
+    #       dt_lag_calc_narr,
+    #       prefix = "NARR_0_",
+    #       skip = c("AMA_SITE_CODE", "time")
+    #     )
+    #     int_narr_cols <- which(
+    #       names(dt_feat_calc_narr_nolag_pred) %in% names(dt_lag_calc_narr)
+    #     )
+    #     dt_iter_calc_narr_bind <- rbind(
+    #       dt_lag_calc_narr,
+    #       dt_feat_calc_narr_nolag_pred[, int_narr_cols, with = FALSE]
+    #     )
+    #     amadeus::calculate_lagged(
+    #       from = dt_iter_calc_narr_bind,
+    #       date = chr_daterange,
+    #       lag = 1,
+    #       locs_id = "AMA_SITE_CODE"
+    #     )
+    #   },
+    #   pattern = map(chr_iter_calc_narr_lag),
+    #   iteration = "list",
+    #   description = "Calculate NARR features | lag | predict"
+    # ),
+    # targets::tar_target(
+    #   dt_feat_calc_narr_pred,
+    #   command = beethoven::reduce_merge(
+    #     beethoven::reduce_list(
+    #       c(list(dt_feat_calc_narr_nolag_pred), list_feat_calc_narr_lag_pred)
+    #     ),
+    #     by = c("AMA_SITE_CODE", "time")
+    #   ),
+    #   description = "data.table of NARR features | predict"
+    # ),
     ###########################       MODIS - MOD11       ######################
     targets::tar_target(
       list_feat_calc_mod11_pred,
