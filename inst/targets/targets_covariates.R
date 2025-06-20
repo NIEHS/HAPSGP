@@ -129,6 +129,113 @@ target_covariates <-
       # )],
       description = "wind frequency for good months only, testing"
     ),
+    ###########################      TRI/SEDC      ###########################
+    targets::tar_target(
+      download_tri,
+      #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects",
+      #pattern = "^download_tri.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_tri.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
+      #command = qs2::qs_read("/ddn/gs1/group/set/Projects/beethoven/targets/objects/download_tri"),
+      #command = qs2::qs_read("/set_targets/objects/download_tri"),
+      description = "Read TRI data target from Beethoven"
+    ),
+    # targets::tar_target(
+    #   list_iter_radii_tri,
+    #   command = c(1000, 10000),
+    #   description = "Buffer radii for TRI"
+    # ),
+    targets::tar_target(
+      list_feat_calc_tri_wf,
+      command = {
+        download_tri
+        from <- amadeus::process_tri(
+          path = file.path(chr_input_dir, "tri"),
+          year = as.numeric(sub("-.*", "", unique(gmet_windfreq$time))),
+          variables = c(1, 13, 12, 14, 20, 34, 36, 47, 48, 49)
+        )
+        tri_wf <- calculate_tri2(
+          from = from,
+          locs = haps_locs,
+          locs_id = "AMA_SITE_CODE",
+          radius = 1000,
+          wf = gmet_windfreq2, #won't branch along the whole windfreq...
+          geom = FALSE
+        )
+        tri_wf$time = unique(gmet_windfreq$time)
+        return(tri_wf)
+      },
+      pattern = map(gmet_windfreq),
+      iteration = "list",
+      description = "calculate monthly TRI data with wind buffers| fit"
+    ),
+    # targets::tar_target(
+    #   list_feat_reduce_tri,
+    #   command = {
+    #     list_feat_calc_tri_unnest <- lapply(
+    #       list_feat_calc_tri,
+    #       function(x) x[[1]]
+    #     )
+    #     chr_tri_radii_index <- sapply(
+    #       list_feat_calc_tri_unnest,
+    #       function(x) {
+    #         any(grepl(sprintf("_%05d", chr_iter_radii_tri), names(x)))
+    #       }
+    #     )
+    #     beethoven::reduce_merge(
+    #       list_feat_calc_tri_unnest[chr_tri_radii_index],
+    #       by = NULL,
+    #       all.x = TRUE,
+    #       all.y = TRUE
+    #     )
+    #   },
+    #   iteration = "list",
+    #   pattern = map(chr_iter_radii_tri),
+    #   resources = targets::tar_resources(
+    #     crew = targets::tar_resources_crew(controller = "controller_100")
+    #   ),
+    #   description = "Reduce TRI features based on radii | fit"
+    # ),
+    # targets::tar_target(
+    #   dt_feat_calc_tri,
+    #   command = {
+    #     dt_feat_merge_tri <- beethoven::reduce_merge(
+    #       list_feat_reduce_tri[1:2],
+    #       by = c("AMA_SITE_CODE", "time", "lon", "lat", "tri_year"),
+    #       all.x = TRUE,
+    #       all.y = TRUE
+    #     )
+    #     dt_feat_merge_tri[is.na(dt_feat_merge_tri)] <- 0
+    #     dt_feat_pca_tri <- beethoven::post_calc_pca(
+    #       locs_id = "AMA_SITE_CODE",
+    #       data = dt_feat_merge_tri,
+    #       yvar = NULL,
+    #       num_comp = 5,
+    #       pattern = "FUGITIVE|STACK",
+    #       groups = sprintf("%05d", chr_iter_radii_tri),
+    #       prefix = "TRI",
+    #       kernel = TRUE
+    #     )
+    #   },
+    #   description = "data.table of TRI PCA-reduced features | fit",
+    #   resources = targets::tar_resources(
+    #     crew = targets::tar_resources_crew(controller = "controller_100")
+    #   )
+    # ),
+    #command = beethoven::reduce_merge(
+    #  lapply(
+    #    list_feat_calc_tri,
+    #    function(x) data.table::data.table(beethoven::reduce_list(x)[[1]])
+    #  ),
+    #  by = NULL,
+    #  all.y=TRUE
+    #),
     ###########################        EDGAR         ###########################
     targets::tar_target(
       edgar_voc,
@@ -254,113 +361,6 @@ target_covariates <-
       ),
       description = "ecoregions collinearity reduction | fit"
     ),
-    ###########################      TRI/SEDC      ###########################
-    targets::tar_target(
-      download_tri,
-      #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects",
-      #pattern = "^download_tri.*", full.names = TRUE)!= ""),
-      command = any(
-        list.files(
-          "/set_targets/objects/",
-          pattern = "^download_tri.*",
-          full.names = TRUE
-        ) !=
-          ""
-      ),
-      #command = qs2::qs_read("/ddn/gs1/group/set/Projects/beethoven/targets/objects/download_tri"),
-      #command = qs2::qs_read("/set_targets/objects/download_tri"),
-      description = "Read TRI data target from Beethoven"
-    ),
-    # targets::tar_target(
-    #   list_iter_radii_tri,
-    #   command = c(1000, 10000),
-    #   description = "Buffer radii for TRI"
-    # ),
-    targets::tar_target(
-      list_feat_calc_tri_wf,
-      command = {
-        download_tri
-        from <- amadeus::process_tri(
-          path = file.path(chr_input_dir, "tri"),
-          year = as.numeric(sub("-.*", "", unique(gmet_windfreq$time))),
-          variables = c(1, 13, 12, 14, 20, 34, 36, 47, 48, 49)
-        )
-        tri_wf <- calculate_tri2(
-          from = from,
-          locs = haps_locs,
-          locs_id = "AMA_SITE_CODE",
-          radius = 1000,
-          wf = gmet_windfreq2, #won't branch along the whole windfreq...
-          geom = FALSE
-        )
-        tri_wf$time = unique(gmet_windfreq$time)
-        return(tri_wf)
-      },
-      pattern = map(gmet_windfreq),
-      iteration = "list",
-      description = "calculate monthly TRI data with wind buffers| fit"
-    ),
-    # targets::tar_target(
-    #   list_feat_reduce_tri,
-    #   command = {
-    #     list_feat_calc_tri_unnest <- lapply(
-    #       list_feat_calc_tri,
-    #       function(x) x[[1]]
-    #     )
-    #     chr_tri_radii_index <- sapply(
-    #       list_feat_calc_tri_unnest,
-    #       function(x) {
-    #         any(grepl(sprintf("_%05d", chr_iter_radii_tri), names(x)))
-    #       }
-    #     )
-    #     beethoven::reduce_merge(
-    #       list_feat_calc_tri_unnest[chr_tri_radii_index],
-    #       by = NULL,
-    #       all.x = TRUE,
-    #       all.y = TRUE
-    #     )
-    #   },
-    #   iteration = "list",
-    #   pattern = map(chr_iter_radii_tri),
-    #   resources = targets::tar_resources(
-    #     crew = targets::tar_resources_crew(controller = "controller_100")
-    #   ),
-    #   description = "Reduce TRI features based on radii | fit"
-    # ),
-    # targets::tar_target(
-    #   dt_feat_calc_tri,
-    #   command = {
-    #     dt_feat_merge_tri <- beethoven::reduce_merge(
-    #       list_feat_reduce_tri[1:2],
-    #       by = c("AMA_SITE_CODE", "time", "lon", "lat", "tri_year"),
-    #       all.x = TRUE,
-    #       all.y = TRUE
-    #     )
-    #     dt_feat_merge_tri[is.na(dt_feat_merge_tri)] <- 0
-    #     dt_feat_pca_tri <- beethoven::post_calc_pca(
-    #       locs_id = "AMA_SITE_CODE",
-    #       data = dt_feat_merge_tri,
-    #       yvar = NULL,
-    #       num_comp = 5,
-    #       pattern = "FUGITIVE|STACK",
-    #       groups = sprintf("%05d", chr_iter_radii_tri),
-    #       prefix = "TRI",
-    #       kernel = TRUE
-    #     )
-    #   },
-    #   description = "data.table of TRI PCA-reduced features | fit",
-    #   resources = targets::tar_resources(
-    #     crew = targets::tar_resources_crew(controller = "controller_100")
-    #   )
-    # ),
-    #command = beethoven::reduce_merge(
-    #  lapply(
-    #    list_feat_calc_tri,
-    #    function(x) data.table::data.table(beethoven::reduce_list(x)[[1]])
-    #  ),
-    #  by = NULL,
-    #  all.y=TRUE
-    #),
     ###########################         NLCD         ###########################
     targets::tar_target(
       chr_iter_calc_nlcd,
