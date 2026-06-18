@@ -1,17 +1,11 @@
 ########################  covariates   ##########################
-#nolint start
 target_covariates <-
   list(
-    ###########################     GRIDMET      ###########################
+    ###########################     GRIDMET     ###########################
     targets::tar_target(
       variables_gridmet,
       command = c("vs", "th", "sph", "pr", "tmmn", "tmmx", "srad"),
       description = "gridmet variables | fit"
-    ),
-    targets::tar_target(
-      buffer_radius,
-      command = c(0),
-      description = "gridmet buffer radiuses | fit"
     ),
     targets::tar_target(
       gmet_process,
@@ -40,7 +34,296 @@ target_covariates <-
       ),
       description = "gridmet collinearity reduction | fit"
     ),
-
+    ###########################   GRIDMET WIND FREQUENCY FOR TRI     ###########################
+    targets::tar_target(
+      gmet_windfreq_dates,
+      command = sort(unique(format(model_dates, "%Y-%m"))),
+      description = "monthly date indexing for wind frequency computations | fit"
+    ),
+    targets::tar_target(
+      haps_locsdates,
+      command = {
+        haps_full <- process_haps(
+          data = dailyavg,
+          date = model_dates,
+          sites_file = haps_metadata,
+          mode = "date-location",
+          data_field = "AMA_SITE_CODE",
+          return_format = "data.table"
+        )
+        haps_full$time = as.character(haps_full$time)
+        return(haps_full)
+      },
+      description = "haps full date-location pairs for wind frequency computations | fit"
+    ),
+    targets::tar_target(
+      gmet_winds,
+      command = gridmet_process(
+        data = haps_locsdates,
+        dates_gridmet = model_dates[
+          format(model_dates, "%Y-%m") == gmet_windfreq_dates
+        ],
+        input_dir = "input/covariates/gridmet/",
+        variables_gridmet = c("vs", "th"),
+        radiuses = chr_iter_radii[1],
+        output = "merged",
+        haps_locs = haps_locs
+      ),
+      pattern = map(gmet_windfreq_dates),
+      iteration = "list",
+      description = "monthly wind data from gridmet | fit"
+    ),
+    targets::tar_target(
+      gmet_windfreq,
+      command = {
+        wfreq = windfreq(
+          gmet_winds,
+          ws_col = paste0("vs_", chr_iter_radii[1]),
+          wd_col = paste0("th_", chr_iter_radii[1]),
+          ws.int = 100, # Really high value to cause only one itnerval
+          wd.int = 4,
+          calm.thres = 0,
+          statistic = "fraction",
+          format = "data.frame",
+          locs_id = "AMA_SITE_CODE"
+        )
+        wfreq$time = unique(format(as.Date(gmet_winds$time, format = "%Y-%m-%d"), "%Y-%m"))
+        return(wfreq)
+      },
+      pattern = map(gmet_winds),
+      iteration = "list",
+      description = "wind frequency calculation for TRI | fit"
+    ),
+    targets::tar_target(
+      gmet_windfreq2,
+      command = gmet_windfreq[[1]],
+      # gmet_windfreq[c(
+      # 1,
+      # 2,
+      # 3,
+      # 4,
+      # 10,
+      # 11,
+      # 12,
+      # 13,
+      # 14,
+      # 15,
+      # 16,
+      # 17,
+      # 22,
+      # 23,
+      # 24,
+      # 26,
+      # 27,
+      # 28,
+      # 29,
+      # 34,
+      # 35,
+      # 36,
+      # 37,
+      # 38,
+      # 39,
+      # 46,
+      # 47,
+      # 48
+      # )],
+      description = "wind frequency for good months only, testing"
+    ),
+    ###########################      TRI/SEDC      ###########################
+    targets::tar_target(
+      download_tri,
+      #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects",
+      #pattern = "^download_tri.*", full.names = TRUE)!= ""),
+      command = any(
+        list.files(
+          "/set_targets/objects/",
+          pattern = "^download_tri.*",
+          full.names = TRUE
+        ) !=
+          ""
+      ),
+      #command = qs2::qs_read("/ddn/gs1/group/set/Projects/beethoven/targets/objects/download_tri"),
+      #command = qs2::qs_read("/set_targets/objects/download_tri"),
+      description = "Read TRI data target from Beethoven"
+    ),
+    # targets::tar_target(
+    #   list_iter_radii_tri,
+    #   command = c(1000, 10000),
+    #   description = "Buffer radii for TRI"
+    # ),
+    targets::tar_target(
+      list_feat_calc_tri_wf,
+      command = {
+        download_tri
+        from <- amadeus::process_tri(
+          path = file.path(chr_input_dir, "tri"),
+          year = as.numeric(sub("-.*", "", unique(gmet_windfreq$time))),
+          variables = c(1, 13, 12, 14, 20, 34, 36, 47, 48, 49)
+        )
+        tri_wf <- calculate_tri2(
+          from = from,
+          locs = haps_locs,
+          locs_id = "AMA_SITE_CODE",
+          radius = 1000,
+          wf = gmet_windfreq2, #won't branch along the whole windfreq...
+          geom = FALSE
+        )
+        tri_wf$time = unique(gmet_windfreq$time)
+        return(tri_wf)
+      },
+      pattern = map(gmet_windfreq),
+      iteration = "list",
+      description = "calculate monthly TRI data with wind buffers| fit"
+    ),
+    # targets::tar_target(
+    #   list_feat_reduce_tri,
+    #   command = {
+    #     list_feat_calc_tri_unnest <- lapply(
+    #       list_feat_calc_tri,
+    #       function(x) x[[1]]
+    #     )
+    #     chr_tri_radii_index <- sapply(
+    #       list_feat_calc_tri_unnest,
+    #       function(x) {
+    #         any(grepl(sprintf("_%05d", chr_iter_radii_tri), names(x)))
+    #       }
+    #     )
+    #     beethoven::reduce_merge(
+    #       list_feat_calc_tri_unnest[chr_tri_radii_index],
+    #       by = NULL,
+    #       all.x = TRUE,
+    #       all.y = TRUE
+    #     )
+    #   },
+    #   iteration = "list",
+    #   pattern = map(chr_iter_radii_tri),
+    #   resources = targets::tar_resources(
+    #     crew = targets::tar_resources_crew(controller = "controller_100")
+    #   ),
+    #   description = "Reduce TRI features based on radii | fit"
+    # ),
+    # targets::tar_target(
+    #   dt_feat_calc_tri,
+    #   command = {
+    #     dt_feat_merge_tri <- beethoven::reduce_merge(
+    #       list_feat_reduce_tri[1:2],
+    #       by = c("AMA_SITE_CODE", "time", "lon", "lat", "tri_year"),
+    #       all.x = TRUE,
+    #       all.y = TRUE
+    #     )
+    #     dt_feat_merge_tri[is.na(dt_feat_merge_tri)] <- 0
+    #     dt_feat_pca_tri <- beethoven::post_calc_pca(
+    #       locs_id = "AMA_SITE_CODE",
+    #       data = dt_feat_merge_tri,
+    #       yvar = NULL,
+    #       num_comp = 5,
+    #       pattern = "FUGITIVE|STACK",
+    #       groups = sprintf("%05d", chr_iter_radii_tri),
+    #       prefix = "TRI",
+    #       kernel = TRUE
+    #     )
+    #   },
+    #   description = "data.table of TRI PCA-reduced features | fit",
+    #   resources = targets::tar_resources(
+    #     crew = targets::tar_resources_crew(controller = "controller_100")
+    #   )
+    # ),
+    #command = beethoven::reduce_merge(
+    #  lapply(
+    #    list_feat_calc_tri,
+    #    function(x) data.table::data.table(beethoven::reduce_list(x)[[1]])
+    #  ),
+    #  by = NULL,
+    #  all.y=TRUE
+    #),
+    ###########################        EDGAR         ###########################
+    targets::tar_target(
+      edgar_voc,
+      command = c(1:25),
+      description = "VOC numbers for EDGAR | fit"
+    ),
+    targets::tar_target(
+      edgar_sector_voc,
+      command = c(
+        "AGRICULTURE",
+        "BUILDINGS",
+        "FUEL_EXPLOITATION",
+        "IND_COMBUSTION",
+        "IND_PROCESSES",
+        "POWER_INDUSTRY",
+        "TRANSPORT",
+        "WASTE"
+      ),
+      description = "VOC sectors for EDGAR | fit"
+    ),
+    targets::tar_target(
+      download_edgar,
+      command = {
+        amadeus::download_edgar(
+          version = "8.1_voc",
+          sector_voc = edgar_sector_voc,
+          format = "nc",
+          output = "emi",
+          year_range = format.Date(chr_daterange, "%Y"),
+          voc = edgar_voc,
+          directory_to_save = "input/covariates/edgar/",
+          unzip = list_download_args$unzip,
+          remove_zip = list_download_args$remove_zip,
+          remove_command = list_download_args$remove_command,
+          acknowledgement = list_download_args$acknowledgement,
+          download = list_download_args$download,
+          hash = list_download_args$hash
+        )
+        TRUE
+      },
+      pattern = map(edgar_sector_voc),
+      description = "Download EDGAR VOC data | download"
+    ),
+    targets::tar_target(
+      download_edgar_buffer,
+      command = {
+        download_edgar
+        TRUE
+      },
+      description = "Download EDGAR data | buffer | download"
+    ),
+    targets::tar_target(
+      list_feat_calc_edgar,
+      command = calculate_edgar(
+        from = process_edgar(
+          year = format.Date(chr_daterange, "%Y"),
+          path = "input/covariates/edgar/data_files/",
+          extent = NULL,
+          voc = edgar_voc,
+          sector_voc = edgar_sector_voc
+        ),
+        locs = haps_locs,
+        locs_id = "AMA_SITE_CODE",
+        radius = chr_iter_radii,
+        fun = "mean",
+        geom = FALSE
+      ),
+      pattern = cross(edgar_voc, chr_iter_radii),
+      iteration = "list",
+      description = "calculate EDGAR data | fit"
+    ),
+    targets::tar_target(
+      dt_feat_calc_edgar,
+      command = beethoven::reduce_merge(
+        beethoven::reduce_list(list_feat_calc_edgar),
+        by = c("AMA_SITE_CODE", "time")
+      ),
+      description = "data.table of EDGAR features | fit"
+    ),
+    targets::tar_target(
+      edgar_reduce,
+      command = reduce_correlated_variables(
+        dt = dt_feat_calc_edgar,
+        cor_threshold = 0.89,
+        noncovariate_cols = c("AMA_SITE_CODE", "time", "sector")
+      ),
+      description = "edgar collinearity reduction | fit"
+    ),
     ###########################      ECOREGIONS      ###########################
     targets::tar_target(
       download_ecoregions,
@@ -78,135 +361,40 @@ target_covariates <-
       ),
       description = "ecoregions collinearity reduction | fit"
     ),
-    ###########################      TRI/SEDC      ###########################
-    targets::tar_target(
-      download_tri,
-      #command= any(list.files("/ddn/gs1/group/set/Projects/beethoven/targets/objects",
-      #pattern = "^download_tri.*", full.names = TRUE)!= ""),
-      command = any(
-        list.files(
-          "/set_targets/objects/",
-          pattern = "^download_tri.*",
-          full.names = TRUE
-        ) !=
-          ""
-      ),
-      #command = qs2::qs_read("/ddn/gs1/group/set/Projects/beethoven/targets/objects/download_tri"),
-      #command = qs2::qs_read("/set_targets/objects/download_tri"),
-      description = "Read TRI data target from Beethoven"
-    ),
-    targets::tar_target(
-      chr_iter_radii_tri,
-      command = c(1000, 10000),
-      description = "Buffer radii for TRI"
-    ),
-    targets::tar_target(
-      df_feat_calc_tri_params,
-      command = expand.grid(
-        year = chr_years,
-        radius = chr_iter_radii_tri
-      ) %>%
-        split(seq_len(nrow(.))),
-      iteration = "list",
-      description = "TRI features"
-    ),
-    targets::tar_target(
-      list_feat_calc_tri,
-      command = {
-        download_tri
-        beethoven::inject_calculate(
-          covariate = "tri",
-          locs = haps_locs,
-          # NOTE: locs are all AQS sites for computational efficiency
-          injection = list(
-            locs_id = "AMA_SITE_CODE",
-            domain = df_feat_calc_tri_params$year,
-            domain_name = "year",
-            path = file.path(chr_input_dir, "tri"),
-            variables = c(1, 13, 12, 14, 20, 34, 36, 47, 48, 49),
-            radius = df_feat_calc_tri_params$radius,
-            nthreads = 1,
-            covariate = "tri"
-          )
-        )
-      },
-      iteration = "list",
-      pattern = map(df_feat_calc_tri_params),
-      description = "Calculate TRI features"
-    ),
-    targets::tar_target(
-      list_feat_reduce_tri,
-      command = {
-        list_feat_calc_tri_unnest <- lapply(
-          list_feat_calc_tri,
-          function(x) x[[1]]
-        )
-        chr_tri_radii_index <- sapply(
-          list_feat_calc_tri_unnest,
-          function(x) {
-            any(grepl(sprintf("_%05d", chr_iter_radii_tri), names(x)))
-          }
-        )
-        beethoven::reduce_merge(
-          list_feat_calc_tri_unnest[chr_tri_radii_index],
-          by = NULL,
-          all.x = TRUE,
-          all.y = TRUE
-        )
-      },
-      iteration = "list",
-      pattern = map(chr_iter_radii_tri),
-      description = "Reduce TRI features based on radii | fit"
-    ),
-    targets::tar_target(
-      dt_feat_calc_tri,
-      command = {
-        dt_feat_merge_tri <- beethoven::reduce_merge(
-          list_feat_reduce_tri[1:2],
-          by = c("AMA_SITE_CODE", "time", "lon", "lat", "tri_year"),
-          all.x = TRUE,
-          all.y = TRUE
-        )
-        dt_feat_merge_tri[is.na(dt_feat_merge_tri)] <- 0
-        dt_feat_pca_tri <- beethoven::post_calc_pca(
-          locs_id = "AMA_SITE_CODE",
-          data = dt_feat_merge_tri,
-          yvar = NULL,
-          num_comp = 5,
-          pattern = "FUGITIVE|STACK",
-          groups = sprintf("%05d", chr_iter_radii_tri),
-          prefix = "TRI",
-          kernel = TRUE
-        )
-      },
-      description = "data.table of TRI PCA-reduced features | fit"
-    ),
-    #command = beethoven::reduce_merge(
-    #  lapply(
-    #    list_feat_calc_tri,
-    #    function(x) data.table::data.table(beethoven::reduce_list(x)[[1]])
-    #  ),
-    #  by = NULL,
-    #  all.y=TRUE
-    #),
     ###########################         NLCD         ###########################
     targets::tar_target(
       chr_iter_calc_nlcd,
-      command = c(2019, 2021),
+      command = c(2019L, 2021L),
       description = "NLCD years | download"
     ),
     targets::tar_target(
       download_nlcd,
-      command = any(
-        list.files(
-          "/set_targets/objects/",
-          pattern = "^download_nlcd*",
-          full.names = TRUE
-        ) !=
-          ""
-      ),
+      command = {
+        amadeus::download_nlcd(
+          year = chr_iter_calc_nlcd,
+          directory_to_save = "input/covariates/nlcd/",
+          remove_command = list_download_args$remove_command,
+          acknowledgement = list_download_args$acknowledgement,
+          download = list_download_args$download,
+          hash = list_download_args$hash
+        )
+        TRUE
+      },
+      pattern = map(chr_iter_calc_nlcd),
       description = "Download NLCD data | download"
     ),
+    # targets::tar_target(
+    #   download_nlcd,
+    #   command = any(
+    #     list.files(
+    #       "/set_targets/objects/",
+    #       pattern = "^download_nlcd*",
+    #       full.names = TRUE
+    #     ) !=
+    #       ""
+    #   ),
+    #   description = "Download NLCD data | download"
+    # ),
     targets::tar_target(
       df_feat_calc_nlcd_params,
       command = expand.grid(
@@ -228,7 +416,7 @@ target_covariates <-
           year = df_feat_calc_nlcd_params$year,
           radius = df_feat_calc_nlcd_params$radius,
           from = amadeus::process_nlcd(
-            path = file.path(chr_input_dir, "nlcd", "data_files"),
+            path = "input/covariates/nlcd/",
             year = df_feat_calc_nlcd_params$year
           ),
           nthreads = 1,
@@ -423,7 +611,8 @@ target_covariates <-
       koppen_reduce,
       command = reduce_correlated_variables(
         dt = dt_feat_calc_koppen,
-        cor_threshold = 0.89
+        cor_threshold = 0.89,
+        noncovariate_cols = c("AMA_SITE_CODE", "description")
       ),
       description = "koppen collinearity reduction | fit"
     ),
@@ -1370,7 +1559,7 @@ target_covariates <-
       command = Reduce(
         post_calc_autojoin2,
         list(
-          #gmet_cleanup,
+          gmet_reduce,
           geos_reduce,
           narr_reduce,
           nasa_reduce
@@ -1384,7 +1573,7 @@ target_covariates <-
       command = lapply(
         list(
           list(hms_reduce),
-          list(dt_feat_calc_tri),
+          # list(dt_feat_calc_tri),
           list(nei_reduce),
           list(ecoregions_reduce),
           list(koppen_reduce),
@@ -1394,9 +1583,7 @@ target_covariates <-
         function(x) {
           if (length(x) == 1) {
             x[[1]]
-          } else if (
-            sum(grepl("light|medium|heavy", sapply(x, \(t) names(t)))) == 3
-          ) {
+          } else if (sum(grepl("light|medium|heavy", sapply(x, \(t) names(t)))) == 3) {
             xr <- lapply(x, \(dt) {
               dta <- data.table::copy(dt)
               dta <- dta[, time := as.character(time)]
@@ -1424,7 +1611,8 @@ target_covariates <-
           list(process),
           list_feat_calc_base_flat,
           list(gmted_reduce),
-          list(nlcd_reduce)
+          list(nlcd_reduce),
+          list(edgar_reduce)
         )
       ),
       description = "Base features with PM2.5 | fit"
@@ -1434,57 +1622,56 @@ target_covariates <-
       dt_feat_calc_design,
       command = post_calc_autojoin2(
         dt_feat_calc_base,
-        dt_feat_calc_date,
+        unique(dt_feat_calc_date, by = c("AMA_SITE_CODE", "time")),
         year_start = as.integer(substr(chr_daterange[1], 1, 4)),
         year_end = as.integer(substr(chr_daterange[2], 1, 4))
       ),
       description = "data.table of all features with PM2.5 | fit"
-    ),
-    targets::tar_target(
-      dt_feat_calc_imputed,
-      command = impute_all2(
-        dt_feat_calc_design,
-        period = chr_daterange,
-        nthreads_dt = 32,
-        nthreads_collapse = 32,
-        nthreads_imputation = 32
-      ),
-      description = "Imputed features + lags | fit"
-    ),
-    targets::tar_target(
-      name = dt_feat_calc_xyt,
-      command = data.table::data.table(
-        beethoven::attach_xy(
-          dt_feat_calc_imputed,
-          haps_locs,
-          locs_id = "AMA_SITE_CODE"
-        )
-      ),
-      description = "Imputed features + AQS sites (outcome and lat/lon) | fit"
-    ),
-    targets::tar_target(
-      xyt_reduce,
-      command = reduce_correlated_variables(
-        dt = dt_feat_calc_xyt,
-        cor_threshold = 0.89,
-        noncovariate_cols = c(vars, "time", "lon", "lat")
-      ),
-      description = "Final covariate collinearity reduction | fit"
-    ),
-    #######################     FILTER TO STATE      #######################
-    target_covariates_nc <-
-      list(
-        targets::tar_target(
-          haps_locs_nc,
-          command = select_states(locs = haps_locs, state_list = c("Texas")),
-          description = "Extract NC locations"
-        ),
-        targets::tar_target(
-          covariates_nc,
-          command = xyt_reduce %>%
-            filter(AMA_SITE_CODE %in% haps_locs_nc$AMA_SITE_CODE),
-          description = "Filter NC covariates"
-        )
-      )
+    ) #,
+    #   targets::tar_target(
+    #     dt_feat_calc_imputed,
+    #     command = impute_all2(
+    #       dt_feat_calc_design,
+    #       period = chr_daterange,
+    #       nthreads_dt = 32,
+    #       nthreads_collapse = 32,
+    #       nthreads_imputation = 32
+    #     ),
+    #     description = "Imputed features + lags | fit"
+    #   ),
+    #   targets::tar_target(
+    #     name = dt_feat_calc_xyt,
+    #     command = data.table::data.table(
+    #       beethoven::attach_xy(
+    #         dt_feat_calc_imputed,
+    #         haps_locs,
+    #         locs_id = "AMA_SITE_CODE"
+    #       )
+    #     ),
+    #     description = "Imputed features + AQS sites (outcome and lat/lon) | fit"
+    #   ),
+    #   targets::tar_target(
+    #     data_full_final,
+    #     command = reduce_correlated_variables(
+    #       dt = dt_feat_calc_xyt,
+    #       cor_threshold = 0.89,
+    #       noncovariate_cols = c(vars, "time", "lon", "lat")
+    #     ),
+    #     description = "Final covariate collinearity reduction | fit"
+    #   ),
+    #   #######################     FILTER TO STATE      #######################
+    #   target_covariates_state <-
+    #     list(
+    #       targets::tar_target(
+    #         haps_locs_state,
+    #         command = select_states(locs = haps_locs, state_list = c("Texas")),
+    #         description = "Extract state locations"
+    #       ),
+    #       targets::tar_target(
+    #         covariates_state,
+    #         command = data_full_final %>%
+    #           filter(AMA_SITE_CODE %in% haps_locs_state$AMA_SITE_CODE),
+    #         description = "Filter stte covariates"
+    #       )
+    #     )
   )
-#nolint end

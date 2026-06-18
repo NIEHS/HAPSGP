@@ -3,7 +3,7 @@
 #' The \code{process_haps()} function imports and cleans HAPs data
 #' @param data dataframe to be processed
 #' @param date vector of dates to select
-#' @param sites_file character(1) path to metadata file for sites' datum and lat-lon
+#' @param sites_file dataframe with metadata for sites' datum and lat-lon
 #' @param mode character(1). One of "date-location" (all dates * all locations)
 #' or "available-data" (date-location pairs with available data) or
 #' "location" (unique locations).
@@ -29,7 +29,7 @@ process_haps <-
   function(
     data = NULL,
     date = c("2018-01-01", "2021-12-31"),
-    sites_file = "AMA_SITE_INFORMATION.Rda",
+    sites_file = NULL,
     mode = c("date-location", "available-data", "location"),
     data_field = NULL,
     return_format = c("terra", "sf", "data.table"),
@@ -41,7 +41,7 @@ process_haps <-
     AMA = do.call('rbind', data)
 
     # Import sites metadata file to find Datum information
-    load(sites_file)
+    AMA_SITE_INFORMATION = sites_file
 
     # Append latitude and longitude
     AMA <- dplyr::left_join(
